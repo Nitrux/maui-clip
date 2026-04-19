@@ -8,21 +8,13 @@
 
 #include <QDebug>
 
-#if defined(Q_OS_ANDROID)
-#include "android/androidlockbackend.h"
-#elif (defined Q_OS_LINUX || defined Q_OS_FREEBSD)
 #include "linux/solidlockbackend.h"
-#endif
 
 LockManager::LockManager(QObject *parent)
     : QObject(parent)
-    , m_inhibit()
+    , m_backend(new SolidLockBackend(this))
+    , m_inhibit(false)
 {
-#if defined(Q_OS_ANDROID)
-    m_backend = new AndroidLockBackend(this);
-#elif defined(Q_OS_LINUX)
-    m_backend = new SolidLockBackend(this);
-#endif
 }
 
 LockManager::~LockManager() = default;
@@ -44,7 +36,6 @@ void LockManager::setInhibitionOff()
 {
     if (!m_backend)
         return;
-qDebug() << "Set Inhibition OOFF";
     m_backend->setInhibitionOff();
 
     m_inhibit = false;
@@ -54,7 +45,6 @@ void LockManager::setInhibitionOn(const QString &explanation)
 {
     if (!m_backend)
         return;
-    qDebug() << "Set Inhibition ON";
 
     m_backend->setInhibitionOn(explanation);
 

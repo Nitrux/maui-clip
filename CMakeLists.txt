@@ -25,43 +25,30 @@ set(REQUIRED_KF_VERSION 5.240.0)
 # Certain versions of FFMPEG need this to be defined
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D __STDC_CONSTANT_MACROS")
 
-if(ANDROID)
-    set(ANDROID_ABIS "armeabi-v7a")
-endif()
-
 find_package(ECM ${REQUIRED_KF_VERSION} REQUIRED NO_MODULE)
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" ${ECM_MODULE_PATH})
 
+include(KDEInstallDirs)
+
 find_package(Qt6 ${REQUIRED_QT_VERSION} REQUIRED NO_MODULE COMPONENTS Core Sql Qml Quick Multimedia Network)
-find_package(KF6 ${REQUIRED_KF_VERSION} REQUIRED COMPONENTS I18n CoreAddons)
-
-find_package(FFmpeg COMPONENTS REQUIRED AVCODEC AVFORMAT SWSCALE)
-if(ANDROID)
-    find_package(taglib 1.4 REQUIRED)
-else()
-    find_package(Taglib 1.4 REQUIRED)
-endif()
-if(ANDROID)
-    find_package(Qt6 ${REQUIRED_QT_VERSION} REQUIRED NO_MODULE COMPONENTS QuickControls2)
-else()
-    find_package(KF6 ${REQUIRED_KF_VERSION} REQUIRED COMPONENTS DBusAddons)
-    find_package(Qt6 ${REQUIRED_QT_VERSION} REQUIRED COMPONENTS Widgets DBus)
-endif()
-
+find_package(Qt6 ${REQUIRED_QT_VERSION} REQUIRED COMPONENTS Widgets DBus)
+find_package(KF6 ${REQUIRED_KF_VERSION} REQUIRED COMPONENTS I18n CoreAddons DBusAddons)
 find_package(MauiKit4 REQUIRED COMPONENTS FileBrowsing)
 
-if(UNIX AND NOT APPLE AND NOT ANDROID)
-    include(KDEInstallDirs)
-    include(KDECMakeSettings)
-endif()
-
+include(KDECMakeSettings)
 include(KDECompilerSettings NO_POLICY_SCOPE)
 include(KDEClangFormat)
 include(ECMSetupVersion)
 include(ECMSourceVersionControl)
 include(FeatureSummary)
 
-option (MPV_AVAILABLE "Use MPV library if it is avalibale, otherwise use default fallback implementation from QtMultimedia" FALSE)
+option(MPV_AVAILABLE "Use MPV library if it is avalibale, otherwise use default fallback implementation from QtMultimedia" FALSE)
+option(CLIP_BUILD_BUNDLED_PREVIEW_PROVIDER "Build Clip's bundled FFmpeg/TagLib preview provider" OFF)
+
+if(CLIP_BUILD_BUNDLED_PREVIEW_PROVIDER)
+    find_package(FFmpeg COMPONENTS REQUIRED AVCODEC AVFILTER AVFORMAT AVUTIL SWSCALE)
+    find_package(Taglib 1.4 REQUIRED)
+endif()
 
 if(${ECM_SOURCE_UNDER_VERSION_CONTROL})
     execute_process(
@@ -70,7 +57,6 @@ if(${ECM_SOURCE_UNDER_VERSION_CONTROL})
         OUTPUT_VARIABLE GIT_BRANCH
         OUTPUT_STRIP_TRAILING_WHITESPACE)
 
-    # Get the latest abbreviated commit hash of the working branch
     execute_process(
         COMMAND git log -1 --format=%h
         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
@@ -79,7 +65,6 @@ if(${ECM_SOURCE_UNDER_VERSION_CONTROL})
 
     add_definitions(-DGIT_COMMIT_HASH="${GIT_COMMIT_HASH}")
     add_definitions(-DGIT_BRANCH="${GIT_BRANCH}")
-
 else()
     add_definitions(-DGIT_COMMIT_HASH="${CLIP_VERSION}")
     add_definitions(-DGIT_BRANCH="Stable")
@@ -89,16 +74,13 @@ ecm_setup_version(${CLIP_VERSION}
     VARIABLE_PREFIX CLIP
     VERSION_HEADER "${CMAKE_CURRENT_BINARY_DIR}/clip_version.h")
 
-qt_policy(SET QTP0001 OLD)
+qt_policy(SET QTP0001 NEW)
 qt_policy(SET QTP0004 NEW)
 
 add_subdirectory(src)
 
 ki18n_install(po)
-
-if(UNIX AND NOT APPLE AND NOT ANDROID)
-    install(FILES org.kde.clip.appdata.xml DESTINATION ${KDE_INSTALL_METAINFODIR})
-endif()
+install(FILES org.kde.clip.appdata.xml DESTINATION ${KDE_INSTALL_METAINFODIR})
 
 feature_summary(WHAT ALL FATAL_ON_MISSING_REQUIRED_PACKAGES)
 
@@ -106,4 +88,3 @@ file(GLOB_RECURSE ALL_CLANG_FORMAT_SOURCE_FILES *.cpp *.h)
 kde_clang_format(${ALL_CLANG_FORMAT_SOURCE_FILES})
 
 qt_finalize_project()
-

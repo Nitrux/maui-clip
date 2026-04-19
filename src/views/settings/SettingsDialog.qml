@@ -209,34 +209,6 @@ Maui.SettingsDialog
     //        }
     //    }
 
-    //    Maui.SectionGroup
-    //    {
-    //        title: i18n("YouTube")
-    //        description: i18n("Configure YouTube details.")
-
-    //        Maui.SectionItem
-    //        {
-    //            label1.text: i18n("Key")
-    //            label2.text: i18n("Personal key for limitless browsing.")
-    //            wide: false
-
-    //            Maui.TextField
-    //            {
-    //                Layout.fillWidth: true
-    //                text: settings.youtubeKey
-    //                onAccepted: settings.youtubeKey = text
-    //            }
-
-    //            template.leftLabels.data: Label
-    //            {
-    //                Layout.fillWidth: true
-    //                text: i18n("<a href='https://console.developers.google.com/apis/credentials'>Get your personal key.</a>")
-
-    //                onLinkActivated: Qt.openUrlExternally(link)
-    //            }
-    //        }
-    //    }
-
     Maui.SectionGroup
     {
         title: i18n("Sources")

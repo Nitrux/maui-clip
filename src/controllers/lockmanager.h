@@ -36,7 +36,6 @@ public Q_SLOTS:
     void setInhibitionOn(const QString &explanation);
 
 private:
-
     LockBackend *m_backend;
     bool m_inhibit;
 };

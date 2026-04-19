@@ -103,7 +103,9 @@ if (NOT FFMPEG_LIBRARIES)
   find_component(AVDEVICE libavdevice avdevice libavdevice/avdevice.h)
   find_component(AVUTIL   libavutil   avutil   libavutil/avutil.h)
   find_component(SWSCALE  libswscale  swscale  libswscale/swscale.h)
-  find_component(POSTPROC libpostproc postproc libpostproc/postprocess.h)
+  if ("POSTPROC" IN_LIST FFmpeg_FIND_COMPONENTS OR "POSTPROCESS" IN_LIST FFmpeg_FIND_COMPONENTS)
+    find_component(POSTPROC libpostproc postproc libpostproc/postprocess.h)
+  endif ()
 
   # Check if the required components were found and add their stuff to the FFMPEG_* vars.
   foreach (_component ${FFmpeg_FIND_COMPONENTS})

@@ -14,8 +14,10 @@
 #include <MauiKit4/FileBrowsing/fmstatic.h>
 #include <MauiKit4/FileBrowsing/moduleinfo.h>
 
+#ifdef CLIP_BUILD_BUNDLED_PREVIEW_PROVIDER
 #include <taglib/taglib.h>
 #include <libavutil/avutil.h>
+#endif
 
 #ifdef MPV_AVAILABLE
 #include "backends/mpv/mpvobject.h"
@@ -23,17 +25,15 @@
 
 #include "models/videosmodel.h"
 #include "models/tagsmodel.h"
-// #include "models/youtubemodel.h"
+#ifdef CLIP_BUILD_BUNDLED_PREVIEW_PROVIDER
 #include "utils/thumbnailer.h"
+#endif
 
 #include "utils/clip.h"
 #include "../clip_version.h"
 
-#ifdef Q_OS_ANDROID
-#include <QGuiApplication>
-#else
 #include <QApplication>
-#endif
+#include <QSurfaceFormat>
 
 #define CLIP_URI "org.maui.clip"
 
@@ -75,13 +75,10 @@ static const QList<QUrl> openFiles(const QStringList &files)
 
 Q_DECL_EXPORT int main(int argc, char *argv[])
 {
-#ifdef Q_OS_ANDROID
-    QGuiApplication app(argc, argv);
-    if (!MAUIAndroid::checkRunTimePermissions({"android.permission.WRITE_EXTERNAL_STORAGE"}))
-        return -1;
-#else
+    QSurfaceFormat format;
+    format.setAlphaBufferSize(8);
+    QSurfaceFormat::setDefaultFormat(format);
     QApplication app(argc, argv);
-#endif
 
 #ifdef MPV_AVAILABLE
     // Qt sets the locale in the QGuiApplication constructor, but libmpv
@@ -118,10 +115,12 @@ Q_DECL_EXPORT int main(int argc, char *argv[])
     about.addComponent("MPV");
 #endif
 
+#ifdef CLIP_BUILD_BUNDLED_PREVIEW_PROVIDER
     about.addComponent("TagLib",
                        "",
                        QString("%1.%2.%3").arg(QString::number(TAGLIB_MAJOR_VERSION),QString::number(TAGLIB_MINOR_VERSION),QString::number(TAGLIB_PATCH_VERSION)),
                        "https://taglib.org/api/index.html");
+#endif
 
     KAboutData::setApplicationData(about);
     MauiApp::instance()->setIconName("qrc:/img/assets/clip.svg");
@@ -164,9 +163,10 @@ Q_DECL_EXPORT int main(int argc, char *argv[])
 
     qmlRegisterType<VideosModel>(CLIP_URI, 1, 0, "Videos");
     qmlRegisterType<TagsModel>(CLIP_URI, 1, 0, "Tags");
-    // qmlRegisterType<YouTubeModel>(CLIP_URI, 1, 0, "YouTube");
     qmlRegisterSingletonInstance<Clip>(CLIP_URI, 1, 0, "Clip", Clip::instance ());
+#ifdef CLIP_BUILD_BUNDLED_PREVIEW_PROVIDER
     engine.addImageProvider("preview", new Thumbnailer());
+#endif
 
 #ifdef MPV_AVAILABLE
     qRegisterMetaType<TracksModel*>();
@@ -181,11 +181,6 @@ Q_DECL_EXPORT int main(int argc, char *argv[])
     });
 
     engine.load(url);
-
-#ifdef Q_OS_MACOS
-    //    MAUIMacOS::removeTitlebarFromWindow();
-    //    MauiApp::instance()->setEnableCSD(true); //for now index can not handle cloud accounts
-#endif
 
     return app.exec();
 }

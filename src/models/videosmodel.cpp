@@ -17,17 +17,21 @@ static FMH::MODEL videoData(const QUrl &url)
 
     model= FMStatic::getFileInfoModel(url);
 
-    model.insert(FMH::MODEL_KEY::PREVIEW, "image://preview/"+url.toString());
+#ifdef CLIP_BUILD_BUNDLED_PREVIEW_PROVIDER
+    model.insert(FMH::MODEL_KEY::PREVIEW, "image://preview/" + url.toString());
+#else
+    model.insert(FMH::MODEL_KEY::PREVIEW, model[FMH::MODEL_KEY::THUMBNAIL]);
+#endif
     return model;
 }
 
 VideosModel::VideosModel(QObject *parent) : MauiList(parent)
   , m_fileLoader(new FMH::FileLoader(this))
-  , m_watcher (new QFileSystemWatcher(this))
+  , m_watcher(new QFileSystemWatcher(this))
+  , m_urls(QStringList())
   , m_autoReload(true)
   , m_autoScan(true)
-  , m_recursive (true)
-  , m_urls(QStringList())
+  , m_recursive(true)
 {
     qDebug()<< "CREATING GALLERY LIST";
 
@@ -112,6 +116,7 @@ QStringList VideosModel::files() const
 
 void VideosModel::scan(const QStringList &urls, const bool &recursive, const int &limit)
 {
+    Q_UNUSED(limit)
     this->clear();
     auto paths = urls.count() == 1 && urls.first() == "collection:///" ? Clip::instance()->sources() : urls;
 

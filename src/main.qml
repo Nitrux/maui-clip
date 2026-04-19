@@ -15,7 +15,6 @@ import "views/player"
 import "views/collection"
 import "views/tags"
 import "views/settings"
-import "views/youtube"
 
 Maui.ApplicationWindow
 {
@@ -24,10 +23,30 @@ Maui.ApplicationWindow
     Maui.Style.styleType: _sideBarView.active ? Maui.Style.Dark : undefined
 
     title: _playerView.currentVideo.label
+    color: "transparent"
+    background: null
 
     property bool selectionMode : false
 
     readonly property alias player: _playerView
+
+    Maui.WindowBlur
+    {
+        view: root
+        geometry: Qt.rect(0, 0, root.width, root.height)
+        windowRadius: Maui.Style.radiusV
+        enabled: true
+    }
+
+    Rectangle
+    {
+        anchors.fill: parent
+        color: Maui.Theme.backgroundColor
+        opacity: 0.76
+        radius: Maui.Style.radiusV
+        border.color: Qt.rgba(1, 1, 1, 0)
+        border.width: 1
+    }
 
     //    onIsPortraitChanged:
     //    {
@@ -53,8 +72,6 @@ Maui.ApplicationWindow
         property string subtitlesPath
         property font font
         property bool playerTagBar: true
-        property string youtubeKey: "AIzaSyDMLmTSEN7i6psE2tHdaG6hy3ljWKXIYBk"
-        property int youtubeQueryLimit : 50
     }
 
     Loader
@@ -254,6 +271,7 @@ Maui.ApplicationWindow
             {
                 id: _playerPage
                 anchors.fill: parent
+                background: null
                 autoHideHeader: _playerView.playbackState === MediaPlayer.PlayingState
                 //                autoHideFooter: _playerView.player.playbackState === MediaPlayer.PlayingState
 
