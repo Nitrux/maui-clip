@@ -86,9 +86,9 @@ Q_DECL_EXPORT int main(int argc, char *argv[])
     std::setlocale(LC_NUMERIC, "C");
 #endif
 
-    app.setOrganizationName("Maui");
-    app.setWindowIcon(QIcon(":/img/assets/clip.svg"));
-    QGuiApplication::setDesktopFileName(QStringLiteral("org.kde.clip"));
+    app.setOrganizationName(QStringLiteral("Maui"));
+    app.setWindowIcon(QIcon::fromTheme(QStringLiteral("clip"), QIcon(QStringLiteral(":/img/assets/clip.svg"))));
+    QGuiApplication::setDesktopFileName(QStringLiteral("org.maui.clip"));
 
     KLocalizedString::setApplicationDomain("clip");
     KAboutData about(QStringLiteral("clip"),
@@ -104,6 +104,7 @@ Q_DECL_EXPORT int main(int argc, char *argv[])
     about.setProductName("maui/clip");
     about.setBugAddress("https://invent.kde.org/maui/clip/-/issues");
     about.setOrganizationDomain(CLIP_URI);
+    about.setDesktopFileName("org.maui.clip");
     about.setProgramLogo(app.windowIcon());
 
     const auto FBData = MauiKitFileBrowsing::aboutData();
@@ -123,7 +124,7 @@ Q_DECL_EXPORT int main(int argc, char *argv[])
 #endif
 
     KAboutData::setApplicationData(about);
-    MauiApp::instance()->setIconName("qrc:/img/assets/clip.svg");
+    MauiApp::instance()->setIconName(QStringLiteral("clip"));
 
     QCommandLineParser parser;
 

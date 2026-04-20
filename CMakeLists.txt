@@ -80,7 +80,7 @@ qt_policy(SET QTP0004 NEW)
 add_subdirectory(src)
 
 ki18n_install(po)
-install(FILES org.kde.clip.appdata.xml DESTINATION ${KDE_INSTALL_METAINFODIR})
+install(FILES org.maui.clip.appdata.xml DESTINATION ${KDE_INSTALL_METAINFODIR})
 
 feature_summary(WHAT ALL FATAL_ON_MISSING_REQUIRED_PACKAGES)
 

@@ -2,16 +2,16 @@ import QtQuick
 import QtQml
 import QtQuick.Controls
 import QtQuick.Layouts
+
 import org.mauikit.controls as Maui
 import org.maui.clip as Clip
-
-import ".."
 
 Maui.AltBrowser
 {
     id: control
 
-    gridView.itemSize: Math.min(200, Math.max(100, Math.floor(width* 0.3)))
+    background: null
+    gridView.itemSize: Math.min(200, Math.max(100, Math.floor(width * 0.3)))
     gridView.itemHeight: gridView.itemSize + Maui.Style.rowHeight
 
     headBar.forceCenterMiddleContent: root.isWide
@@ -27,19 +27,74 @@ Maui.AltBrowser
         restoreMode: Binding.RestoreBinding
     }
 
-    headBar.middleContent: Maui.SearchField
-    {
-        Layout.fillWidth: true
-        Layout.alignment: Qt.AlignCenter
-        Layout.maximumWidth: 500
-        placeholderText: i18n("Filter")
-    }
+    headBar.leftContent: [
+        ToolButton
+        {
+            icon.name: "view-preview"
+            onClicked: ApplicationWindow.window.showGallery()
+        },
 
-    headBar.rightContent: ToolButton
-    {
-        icon.name: "list-add"
-        onClicked: newTagDialog.open()
-    }
+        ToolButton
+        {
+            icon.name: "folder"
+            onClicked: ApplicationWindow.window.showCollections()
+        },
+
+        ToolButton
+        {
+            icon.name: "tag"
+            onClicked: ApplicationWindow.window.showTags()
+        },
+
+        ToolSeparator
+        {
+            bottomPadding: 10
+            topPadding: 10
+        },
+
+        Maui.SearchField
+        {
+            Layout.fillWidth: true
+            Layout.alignment: Qt.AlignCenter
+            Layout.maximumWidth: 500
+            placeholderText: i18n("Filter tags")
+            onTextChanged: _collectionModel.filter = text
+            onCleared: _collectionModel.filter = ""
+        }
+    ]
+
+    headBar.rightContent: [
+        ToolButton
+        {
+            icon.name: "list-add"
+            onClicked: newTagDialog.open()
+        },
+
+        ToolSeparator
+        {
+            bottomPadding: 10
+            topPadding: 10
+        },
+
+        Maui.ToolButtonMenu
+        {
+            icon.name: "overflow-menu"
+
+            MenuItem
+            {
+                text: i18n("Settings")
+                icon.name: "settings-configure"
+                onTriggered: ApplicationWindow.window.openSettingsDialog()
+            }
+
+            MenuItem
+            {
+                text: i18n("About")
+                icon.name: "documentinfo"
+                onTriggered: Maui.App.aboutDialog()
+            }
+        }
+    ]
 
     model: Maui.BaseModel
     {
@@ -65,19 +120,15 @@ Maui.AltBrowser
         onClicked:
         {
             control.currentIndex = index
-            if(Maui.Handy.singleClick)
-            {
+            if (Maui.Handy.singleClick)
                 populateGrid(model.tag)
-            }
         }
 
         onDoubleClicked:
         {
             control.currentIndex = index
-            if(!Maui.Handy.singleClick)
-            {
+            if (!Maui.Handy.singleClick)
                 populateGrid(model.tag)
-            }
         }
     }
 
@@ -89,16 +140,11 @@ Maui.AltBrowser
         Maui.CollageItem
         {
             width: control.gridView.itemSize - Maui.Style.space.medium
-            height: control.gridView.itemHeight  - Maui.Style.space.medium
+            height: control.gridView.itemHeight - Maui.Style.space.medium
 
             isCurrentItem: parent.GridView.isCurrentItem
-
             images: model.preview.split(",")
-
-            cb: function(url)
-            {
-                return "image://thumbnailer/"+url
-            }
+            cb: function(url) { return "image://thumbnailer/" + url }
 
             template.label1.text: model.tag
             template.iconSource: model.icon
@@ -107,19 +153,15 @@ Maui.AltBrowser
             onClicked:
             {
                 control.currentIndex = index
-                if(Maui.Handy.singleClick)
-                {
+                if (Maui.Handy.singleClick)
                     populateGrid(model.tag)
-                }
             }
 
             onDoubleClicked:
             {
                 control.currentIndex = index
-                if(!Maui.Handy.singleClick)
-                {
+                if (!Maui.Handy.singleClick)
                     populateGrid(model.tag)
-                }
             }
         }
     }

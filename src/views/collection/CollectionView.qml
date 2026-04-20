@@ -1,122 +1,74 @@
+import QtQuick
 import QtQuick.Controls
-import org.maui.clip as Clip
 
 import org.mauikit.controls as Maui
-import org.mauikit.filebrowsing as FB
 
 import ".."
 
-Maui.SideBarView
+BrowserLayout
 {
     id: control
-    property alias urls : _browser.urls
+    objectName: "GalleryView"
+
     background: null
+    Maui.Controls.showCSD: true
+    headerMargins: Maui.Style.contentMargins
+    headBar.middleContent: []
 
-    sideBar.preferredWidth: 200
-    sideBar.minimumWidth: 200
-    sideBar.resizeable: false
-    sideBar.content: PlacesSidebar
-    {
-        anchors.fill: parent
-        anchors.margins: Maui.Style.contentMargins
-    }
-
-    BrowserLayout
-    {
-        id: _browser
-        anchors.fill: parent
-        floatingFooter: true
-        Maui.Controls.showCSD: true
-        background: null
-        altHeader: Maui.Handy.isMobile
-        headerMargins: Maui.Style.defaultPadding
-        // floatingHeader: true
-
-        headBar.leftContent: [Maui.ToolButtonMenu
+    holder.emoji: "qrc:/img/assets/view-media-video.svg"
+    holder.title: i18n("No Videos!")
+    holder.body: i18n("Nothing here. You can add new sources or open a video.")
+    holder.actions: [
+        Action
         {
-            icon.name: "application-menu"
+            text: i18n("Open File")
+            onTriggered: openFileDialog()
+        },
 
-            MenuItem
-            {
-                enabled: Clip.Clip.mpvAvailable
-                text: i18n("Open URL")
-                icon.name: "filename-space-amarok"
+        Action
+        {
+            text: i18n("Add Source")
+            onTriggered: openSettingsDialog()
+        }
+    ]
 
-                onTriggered:
-                {
-                    _openUrlDialog.open()
-                }
-            }
-
-            MenuItem
-            {
-                text: i18n("Settings")
-                icon.name: "settings-configure"
-
-                onTriggered: openSettingsDialog()
-            }
-
-            MenuItem
-            {
-                text: i18n("About")
-                icon.name: "documentinfo"
-                onTriggered: Maui.App.aboutDialog()
-            }
+    headBar.leftContent: [
+        ToolButton
+        {
+            icon.name: "folder-videos"
+            onClicked: ApplicationWindow.window.showGallery()
         },
 
         ToolButton
-            {
-                icon.name: control.sideBar.visible ? "sidebar-collapse" : "sidebar-expand"
-                visible: control.sideBar.collapsed
-
-                onClicked: control.sideBar.toggle()
-
-                checked: control.sideBar.visible
-
-                ToolTip.delay: 1000
-                ToolTip.timeout: 5000
-                ToolTip.visible: hovered
-                ToolTip.text: i18n("Toggle sidebar")
-            }
-
-        ]
-
-        holder.emoji: "qrc:/img/assets/view-media-video.svg"
-        holder.title: i18n("No Videos!")
-        holder.body: i18n("Add a new video source or open a file.")
-        holder.actions:[
-
-            Action
-            {
-                text: i18n("Open file")
-                onTriggered: openFileDialog()
-            },
-
-            Action
-            {
-                text: i18n("Add sources")
-                onTriggered: openSettingsDialog()
-            }
-        ]
-
-        onItemClicked:
         {
-            play(item)
-        }
+            icon.name: "folder"
+            onClicked: ApplicationWindow.window.showCollections()
+        },
 
-
-        footer: SelectionBar
+        ToolButton
         {
-            id: selectionBar
-            anchors.horizontalCenter: parent.horizontalCenter
-            width: Math.min(parent.width-(Maui.Style.space.medium*2), implicitWidth)
-            maxListHeight: control.height - Maui.Style.space.medium
-        }
-    }
+            icon.name: "tag"
+            onClicked: ApplicationWindow.window.showTags()
+        },
 
-    function openFolders(urls)
-    {
-        control.urls = urls
-    }
+        ToolSeparator
+        {
+            bottomPadding: 10
+            topPadding: 10
+        },
+
+        Maui.SearchField
+        {
+            implicitWidth: 250
+            placeholderText: i18np("Search %1 video", "Search %1 videos", control.list.count)
+            onTextChanged: control.listModel.filter = text
+            onCleared: control.listModel.filter = ""
+            Keys.priority: Keys.AfterItem
+            Keys.onReturnPressed: event.accepted = true
+        }
+    ]
+
+
+
+    onItemClicked: play(item)
 }
-

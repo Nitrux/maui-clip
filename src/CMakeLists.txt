@@ -51,6 +51,7 @@ qt_add_qml_module(${PROJECT_NAME} URI app.maui.clip
     views/player/PlayerView.qml
     views/player/MPVPlayer.qml
     views/collection/CollectionView.qml
+    views/collection/CollectionsView.qml
     views/SelectionBar.qml
     views/tags/TagsView.qml
     views/player/Playlist.qml
@@ -58,10 +59,8 @@ qt_add_qml_module(${PROJECT_NAME} URI app.maui.clip
     views/BrowserLayout.qml
     views/ItemMenu.qml
     views/ListDelegate.qml
-    views/FloatingVideo.qml
     views/settings/SettingsDialog.qml
-    views/player/Player.qml
-    views/collection/PlacesSidebar.qml)
+    views/player/Player.qml)
 
 target_link_libraries(${PROJECT_NAME}
     PRIVATE
@@ -105,7 +104,7 @@ if(CLIP_BUILD_BUNDLED_PREVIEW_PROVIDER)
 endif()
 
 install(TARGETS ${PROJECT_NAME} ${KDE_INSTALL_TARGETS_DEFAULT_ARGS})
-install(FILES org.kde.clip.desktop DESTINATION ${KDE_INSTALL_APPDIR})
+install(FILES org.maui.clip.desktop DESTINATION ${KDE_INSTALL_APPDIR})
 #TODO: port to ecm_install_icons()
 install(FILES assets/clip.svg DESTINATION ${KDE_INSTALL_ICONDIR}/hicolor/scalable/apps)
 

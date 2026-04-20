@@ -10,13 +10,54 @@ import QtMultimedia
 Maui.AltBrowser
 {
     id: control
-    property alias list : _collectionList
-    property alias urls : _collectionList.urls
-    property alias listModel : _collectionModel
-    property alias searchField:  _searchField
+
+    background: null
+
+    property alias list: _collectionList
+    property alias urls: _collectionList.urls
+    property alias listModel: _collectionModel
+    property alias searchField: _searchField
+    property var selectionBar: null
 
     signal itemClicked(var item)
     signal itemRightClicked(var item)
+
+    readonly property var sortOptions: [
+        { text: i18n("Title (A-Z)"), sort: "label", order: Qt.AscendingOrder },
+        { text: i18n("Title (Z-A)"), sort: "label", order: Qt.DescendingOrder },
+        { text: i18n("Date (Newest)"), sort: "modified", order: Qt.DescendingOrder },
+        { text: i18n("Date (Oldest)"), sort: "modified", order: Qt.AscendingOrder },
+        { text: i18n("Size (Smallest)"), sort: "size", order: Qt.AscendingOrder },
+        { text: i18n("Size (Largest)"), sort: "size", order: Qt.DescendingOrder },
+        { text: i18n("Type (A-Z)"), sort: "type", order: Qt.AscendingOrder }
+    ]
+    readonly property var sortLabels: sortOptions.map((option) => option.text)
+    property bool sortSyncReady: false
+
+    function currentSortIndex()
+    {
+        for (let i = 0; i < sortOptions.length; i++) {
+            const option = sortOptions[i]
+
+            if (option.sort === settings.sortBy && option.order === settings.sortOrder)
+                return i
+        }
+
+        return 0
+    }
+
+    function applySort(index)
+    {
+        if (index < 0 || index >= sortOptions.length)
+            return
+
+        const option = sortOptions[index]
+
+        _collectionModel.sortOrder = option.order
+        _collectionModel.sort = option.sort
+        settings.sortOrder = option.order
+        settings.sortBy = option.sort
+    }
 
     headBar.forceCenterMiddleContent: false
     gridView.itemSize: 180
@@ -35,19 +76,19 @@ Maui.AltBrowser
 
         function onItemsSelected(indexes)
         {
-            for(var i in indexes)
+            if (!selectionBar)
+                return
+
+            for (var i in indexes)
                 selectionBar.insert(_collectionModel.get(indexes[i]))
         }
 
         function onKeyPress(event)
         {
             const index = control.currentIndex
-            const item = control.model.get(index)
 
-            if((event.key == Qt.Key_Left || event.key == Qt.Key_Right || event.key == Qt.Key_Down || event.key == Qt.Key_Up) && (event.modifiers & Qt.ControlModifier) && (event.modifiers & Qt.ShiftModifier))
-            {
+            if ((event.key == Qt.Key_Left || event.key == Qt.Key_Right || event.key == Qt.Key_Down || event.key == Qt.Key_Up) && (event.modifiers & Qt.ControlModifier) && (event.modifiers & Qt.ShiftModifier))
                 control.currentView.itemsSelected([index])
-            }
         }
     }
 
@@ -62,14 +103,69 @@ Maui.AltBrowser
     {
         id: _searchField
         enabled: _collectionList.count > 0
-        Layout.fillWidth: true
+        implicitWidth: 250
         Layout.maximumWidth: 500
         Layout.alignment: Qt.AlignCenter
 
         placeholderText: i18np("Search %1 video", "Search %1 videos", _collectionList.count)
-        onAccepted: _collectionModel.filter = text
+        onTextChanged: _collectionModel.filter = text
         onCleared: _collectionModel.filter = ""
+        Keys.priority: Keys.AfterItem
+        Keys.onReturnPressed: event.accepted = true
     }
+
+    headBar.rightContent: [
+        Label
+        {
+            text: i18n("Sort")
+            font.weight: Font.DemiBold
+            verticalAlignment: Text.AlignVCenter
+        },
+
+        ComboBox
+        {
+            id: _sortComboBox
+            implicitWidth: 190
+            model: control.sortLabels
+
+            Component.onCompleted:
+            {
+                currentIndex = control.currentSortIndex()
+                control.sortSyncReady = true
+            }
+
+            onCurrentIndexChanged:
+            {
+                if (control.sortSyncReady)
+                    control.applySort(currentIndex)
+            }
+        },
+
+        ToolSeparator
+        {
+            bottomPadding: 10
+            topPadding: 10
+        },
+
+        Maui.ToolButtonMenu
+        {
+            icon.name: "overflow-menu"
+
+            MenuItem
+            {
+                text: i18n("Settings")
+                icon.name: "settings-configure"
+                onTriggered: openSettingsDialog()
+            }
+
+            MenuItem
+            {
+                text: i18n("About")
+                icon.name: "documentinfo"
+                onTriggered: Maui.App.aboutDialog()
+            }
+        }
+    ]
 
     model: Maui.BaseModel
     {
@@ -100,11 +196,9 @@ Maui.AltBrowser
         onClicked: (mouse) =>
         {
             control.currentIndex = index
-            if(selectionMode || (mouse.button == Qt.LeftButton && (mouse.modifiers & Qt.ControlModifier)))
-            {
+            if (selectionMode || (mouse.button == Qt.LeftButton && (mouse.modifiers & Qt.ControlModifier))) {
                 control.currentView.itemsSelected([index])
-            }else if(Maui.Handy.singleClick)
-            {
+            } else if (Maui.Handy.singleClick) {
                 control.itemClicked(listModel.get(index))
             }
         }
@@ -112,15 +206,13 @@ Maui.AltBrowser
         onDoubleClicked:
         {
             control.currentIndex = index
-            if(!Maui.Handy.singleClick && !selectionMode)
-            {
+            if (!Maui.Handy.singleClick && !selectionMode)
                 control.itemClicked(listModel.get(index))
-            }
         }
 
         onPressAndHold:
         {
-            if(!Maui.Handy.isTouch)
+            if (!Maui.Handy.isTouch)
                 return
 
             control.currentIndex = index
@@ -141,13 +233,13 @@ Maui.AltBrowser
 
             function onUriRemoved(uri)
             {
-                if(uri === model.url)
+                if (uri === model.url)
                     _listDelegate.checked = false
             }
 
             function onUriAdded(uri)
             {
-                if(uri === model.url)
+                if (uri === model.url)
                     _listDelegate.checked = true
             }
 
@@ -160,15 +252,15 @@ Maui.AltBrowser
 
     gridDelegate: Item
     {
-        readonly property bool isCurrentItem : GridView.isCurrentItem
+        readonly property bool isCurrentItem: GridView.isCurrentItem
         height: GridView.view.cellHeight
         width: GridView.view.cellWidth
 
-        property bool preview : false
+        property bool preview: false
 
         Timer
         {
-            id:  _timer
+            id: _timer
             interval: 1500
             onTriggered: parent.preview = true
         }
@@ -179,11 +271,9 @@ Maui.AltBrowser
 
             onHoveredChanged:
             {
-                if(hovered)
-                {
+                if (hovered) {
                     _timer.start()
-                }else
-                {
+                } else {
                     _timer.stop()
                     preview = false
                 }
@@ -199,133 +289,119 @@ Maui.AltBrowser
             isCurrentItem: parent.isCurrentItem || checked
             tooltipText: model.url
             checkable: root.selectionMode || checked
-            checked: (selectionBar ? selectionBar.contains(model.url) : false)
+            checked: selectionBar ? selectionBar.contains(model.url) : false
             draggable: true
 
             Drag.keys: ["text/uri-list"]
-            Drag.mimeData: Drag.active ?
-                               {
-                                   "text/uri-list": control.filterSelectedItems(model.url)
-                               } : {}
+            Drag.mimeData: Drag.active ? {
+                "text/uri-list": control.filterSelectedItems(model.url)
+            } : {}
 
-        template.iconComponent: Loader
-        {
-            asynchronous: true
-            sourceComponent: preview && !Maui.Handy.isMobile ? videoComponent : imgComponent
-
-            Component
+            template.iconComponent: Loader
             {
-                id: videoComponent
-                Video
+                asynchronous: true
+                sourceComponent: preview && !Maui.Handy.isMobile ? videoComponent : imgComponent
+
+                Component
                 {
-                    autoPlay: true
-                    // autoLoad: true
-                    source: model.url
-                    muted: true
-                    fillMode: VideoOutput.PreserveAspectFit
-                    playbackRate: 5.0
-                    loops: 3
-                    // flushMode: VideoOutput.LastFrame
+                    id: videoComponent
+                    Video
+                    {
+                        autoPlay: true
+                        source: model.url
+                        muted: true
+                        fillMode: VideoOutput.PreserveAspectFit
+                        playbackRate: 5.0
+                        loops: 3
+                    }
+                }
+
+                Component
+                {
+                    id: imgComponent
+                    Maui.IconItem
+                    {
+                        imageSource: model.preview
+                        iconSource: model.icon
+                        fillMode: Image.PreserveAspectFit
+                        image.cache: true
+                    }
                 }
             }
 
-            Component
+            onClicked: (mouse) =>
             {
-                id: imgComponent
-                Maui.IconItem
-                {
-                    imageSource: model.preview
-                    iconSource: model.icon
-                    fillMode: Image.PreserveAspectFit
-                    image.cache: true
+                control.currentIndex = index
+                if (selectionMode || (mouse.button == Qt.LeftButton && (mouse.modifiers & Qt.ControlModifier))) {
+                    control.currentView.itemsSelected([index])
+                } else if (Maui.Handy.singleClick) {
+                    control.itemClicked(listModel.get(index))
                 }
             }
-        }
 
-        onClicked: (mouse) =>
-        {
-            control.currentIndex = index
-            if(selectionMode || (mouse.button == Qt.LeftButton && (mouse.modifiers & Qt.ControlModifier)))
+            onDoubleClicked:
             {
+                control.currentIndex = index
+                if (!Maui.Handy.singleClick && !selectionMode)
+                    control.itemClicked(listModel.get(index))
+            }
+
+            onPressAndHold:
+            {
+                if (!Maui.Handy.isTouch)
+                    return
+
+                control.currentIndex = index
+                control.itemRightClicked(listModel.get(index))
+                _menu.show()
+            }
+
+            onRightClicked:
+            {
+                control.currentIndex = index
+                control.itemRightClicked(listModel.get(index))
+                _menu.show()
+            }
+
+            onToggled:
+            {
+                control.currentIndex = index
                 control.currentView.itemsSelected([index])
-            }else if(Maui.Handy.singleClick)
-            {
-                control.itemClicked(listModel.get(index))
             }
-        }
 
-        onDoubleClicked:
-        {
-            control.currentIndex = index
-            if(!Maui.Handy.singleClick && !selectionMode)
+            onContentDropped:
             {
-                control.itemClicked(listModel.get(index))
             }
-        }
 
-        onPressAndHold:
-        {
-            if(!Maui.Handy.isTouch)
-                return
-
-            control.currentIndex = index
-            control.itemRightClicked(listModel.get(index))
-            _menu.show()
-        }
-
-        onRightClicked:
-        {
-            control.currentIndex = index
-            control.itemRightClicked(listModel.get(index))
-            _menu.show()
-        }
-
-        onToggled:
-        {
-            control.currentIndex = index
-            control.currentView.itemsSelected([index])
-        }
-
-        onContentDropped:
-        {
-            //                _dropMenu.urls = drop.urls.join(",")
-            //                _dropMenu.target = model.url
-            //                _dropMenu.popup()
-        }
-
-        Connections
-        {
-            target: selectionBar
-
-            function onUriRemoved(uri)
+            Connections
             {
-                if(uri === model.url)
+                target: selectionBar
+
+                function onUriRemoved(uri)
+                {
+                    if (uri === model.url)
+                        delegate.checked = false
+                }
+
+                function onUriAdded(uri)
+                {
+                    if (uri === model.url)
+                        delegate.checked = true
+                }
+
+                function onCleared(uri)
+                {
                     delegate.checked = false
-            }
-
-            function onUriAdded(uri)
-            {
-                if(uri === model.url)
-                    delegate.checked = true
-            }
-
-            function onCleared(uri)
-            {
-                delegate.checked = false
+                }
             }
         }
     }
-}
 
-function filterSelectedItems(url)
-{
-    if(selectionBar && selectionBar.count > 0 && selectionBar.contains(url))
+    function filterSelectedItems(url)
     {
-        const uris = selectionBox.uris
-        return uris.join("\n")
+        if (selectionBar && selectionBar.count > 0 && selectionBar.contains(url))
+            return selectionBar.uris.join("\n")
+
+        return url
     }
-
-    return url
-}
-
 }

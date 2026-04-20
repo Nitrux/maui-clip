@@ -1,19 +1,19 @@
-import QtQuick 2.14
-import QtQuick.Controls 2.14
+import QtQuick
+import QtQuick.Controls
 
-import org.mauikit.controls 1.2 as Maui
-import org.mauikit.filebrowsing 1.3 as FB
-
-import org.maui.clip 1.0 as Clip
+import org.mauikit.controls as Maui
+import org.mauikit.filebrowsing as FB
 
 import ".."
 
 StackView
 {
     id: control
+    objectName: "TagsView"
+    background: null
 
-    property string currentTag : ""
-    property Flickable flickable : currentItem.flickable
+    property string currentTag: ""
+    property Flickable flickable: currentItem.flickable
 
     FB.NewTagDialog
     {
@@ -22,7 +22,7 @@ StackView
 
     initialItem: TagsGrid
     {
-        id:  _tagsGrid
+        id: _tagsGrid
     }
 
     Component
@@ -33,27 +33,55 @@ StackView
         {
             showTitle: false
             title: control.currentTag
-            list.urls : ["tags:///"+currentTag]
+            background: null
+            list.urls: ["tags:///" + currentTag]
             list.recursive: false
             holder.title: i18n("No Videos!")
-            holder.body: i18n("There's no videos associated with the tag")
+            holder.body: i18n("There are no videos associated with this tag.")
             headBar.visible: true
-            headBar.farLeftContent: ToolButton
-            {
-                icon.name: "go-previous"
-                onClicked: control.pop()
-            }
+            headBar.leftContent: [
+                ToolButton
+                {
+                    icon.name: "go-previous"
+                    onClicked: control.pop()
+                },
 
-            onItemClicked:
-            {
-                play(item)
-            }
+                ToolSeparator
+                {
+                    bottomPadding: 10
+                    topPadding: 10
+                },
+
+                ToolButton
+                {
+                    icon.name: "view-preview"
+                    onClicked: ApplicationWindow.window.showGallery()
+                },
+
+                ToolButton
+                {
+                    icon.name: "folder"
+                    onClicked: ApplicationWindow.window.showCollections()
+                },
+
+                ToolButton
+                {
+                    icon.name: "tag"
+                    onClicked: ApplicationWindow.window.showTags()
+                }
+            ]
+
+            onItemClicked: play(item)
         }
     }
 
     function populateGrid(myTag)
     {
-        control.push(_filterViewComponent)
         currentTag = myTag
+
+        if (control.depth > 1)
+            control.pop()
+
+        control.push(_filterViewComponent)
     }
 }
