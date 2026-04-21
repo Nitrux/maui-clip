@@ -8,7 +8,6 @@
 #include <QQmlApplicationEngine>
 
 #include <KLocalizedString>
-#include "controllers/lockmanager.h"
 
 #include <MauiKit4/Core/mauiapp.h>
 #include <MauiKit4/FileBrowsing/fmstatic.h>
@@ -32,7 +31,7 @@
 #include "utils/clip.h"
 #include "../clip_version.h"
 
-#include <QApplication>
+#include <QGuiApplication>
 #include <QSurfaceFormat>
 
 #define CLIP_URI "org.maui.clip"
@@ -78,7 +77,7 @@ Q_DECL_EXPORT int main(int argc, char *argv[])
     QSurfaceFormat format;
     format.setAlphaBufferSize(8);
     QSurfaceFormat::setDefaultFormat(format);
-    QApplication app(argc, argv);
+    QGuiApplication app(argc, argv);
 
 #ifdef MPV_AVAILABLE
     // Qt sets the locale in the QGuiApplication constructor, but libmpv
@@ -87,7 +86,7 @@ Q_DECL_EXPORT int main(int argc, char *argv[])
 #endif
 
     app.setOrganizationName(QStringLiteral("Maui"));
-    app.setWindowIcon(QIcon::fromTheme(QStringLiteral("clip"), QIcon(QStringLiteral(":/img/assets/clip.svg"))));
+    app.setWindowIcon(QIcon::fromTheme(QStringLiteral("maui-clip"), QIcon(QStringLiteral(":/img/assets/maui-clip.svg"))));
     QGuiApplication::setDesktopFileName(QStringLiteral("org.maui.clip"));
 
     KLocalizedString::setApplicationDomain("clip");
@@ -124,7 +123,7 @@ Q_DECL_EXPORT int main(int argc, char *argv[])
 #endif
 
     KAboutData::setApplicationData(about);
-    MauiApp::instance()->setIconName(QStringLiteral("clip"));
+    MauiApp::instance()->setIconName(QStringLiteral("qrc:/img/assets/maui-clip.svg"));
 
     QCommandLineParser parser;
 
@@ -176,10 +175,6 @@ Q_DECL_EXPORT int main(int argc, char *argv[])
 #else
     qmlRegisterType(QUrl("qrc:/app/maui/clip/views/player/Player.qml"), CLIP_URI, 1, 0, "Video");
 #endif
-
-    qmlRegisterSingletonType<LockManager>(CLIP_URI, 1, 0, "LockManager", [](QQmlEngine*, QJSEngine*) -> QObject* {
-        return new LockManager;
-    });
 
     engine.load(url);
 

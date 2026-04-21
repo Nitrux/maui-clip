@@ -97,27 +97,5 @@ Maui.ContextualMenu
         icon.name: "edit-delete"
         Maui.Controls.status: Maui.Controls.Negative
         onTriggered: removeFiles([model.get(index).url])
-
-        Component
-        {
-            id: removeDialogComponent
-
-            Maui.InfoDialog
-            {
-
-                title: i18n("Delete file?")
-
-                message: i18n("Are sure you want to delete \n%1", control.model.get(index).url)
-                template.iconSource: "emblem-warning"
-
-                onRejected: close()
-                onAccepted:
-                {
-                    control.model.list.deleteAt(model.mappedToSource(control.index))
-                    close()
-                }
-                onClosed: destroy()
-            }
-        }
     }
 }

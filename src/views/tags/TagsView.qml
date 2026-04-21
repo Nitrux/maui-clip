@@ -2,7 +2,6 @@ import QtQuick
 import QtQuick.Controls
 
 import org.mauikit.controls as Maui
-import org.mauikit.filebrowsing as FB
 
 import ".."
 
@@ -15,11 +14,6 @@ StackView
     property string currentTag: ""
     property Flickable flickable: currentItem.flickable
 
-    FB.NewTagDialog
-    {
-        id: newTagDialog
-    }
-
     initialItem: TagsGrid
     {
         id: _tagsGrid
@@ -31,6 +25,7 @@ StackView
 
         BrowserLayout
         {
+            id: _tagBrowser
             showTitle: false
             title: control.currentTag
             background: null
@@ -54,7 +49,7 @@ StackView
 
                 ToolButton
                 {
-                    icon.name: "view-preview"
+                    icon.name: "folder-videos"
                     onClicked: ApplicationWindow.window.showGallery()
                 },
 
@@ -68,6 +63,23 @@ StackView
                 {
                     icon.name: "tag"
                     onClicked: ApplicationWindow.window.showTags()
+                },
+
+                ToolSeparator
+                {
+                    bottomPadding: 10
+                    topPadding: 10
+                },
+
+                Maui.SearchField
+                {
+                    enabled: _tagBrowser.list.count > 0
+                    implicitWidth: 250
+                    placeholderText: i18n("Search videos")
+                    onTextChanged: _tagBrowser.listModel.filter = text
+                    onCleared: _tagBrowser.listModel.filter = ""
+                    Keys.priority: Keys.AfterItem
+                    Keys.onReturnPressed: event.accepted = true
                 }
             ]
 

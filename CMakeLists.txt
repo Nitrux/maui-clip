@@ -31,8 +31,7 @@ set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" ${ECM_MODULE_PATH})
 include(KDEInstallDirs)
 
 find_package(Qt6 ${REQUIRED_QT_VERSION} REQUIRED NO_MODULE COMPONENTS Core Sql Qml Quick Multimedia Network)
-find_package(Qt6 ${REQUIRED_QT_VERSION} REQUIRED COMPONENTS Widgets DBus)
-find_package(KF6 ${REQUIRED_KF_VERSION} REQUIRED COMPONENTS I18n CoreAddons DBusAddons)
+find_package(KF6 ${REQUIRED_KF_VERSION} REQUIRED COMPONENTS I18n CoreAddons)
 find_package(MauiKit4 REQUIRED COMPONENTS FileBrowsing)
 
 include(KDECMakeSettings)

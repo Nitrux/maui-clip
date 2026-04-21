@@ -9,96 +9,316 @@ import org.maui.clip as Clip
 
 import ".."
 
-StackView
+Maui.Page
 {
     id: control
     objectName: "CollectionView"
+
     background: null
+    Maui.Controls.showCSD: true
+    headerMargins: Maui.Style.contentMargins
 
-    property string currentSourceUrl: ""
-    property string currentSourceLabel: ""
+    focus: true
+    focusPolicy: Qt.StrongFocus
+    Keys.enabled: true
+    Keys.forwardTo: _foldersView
 
-    initialItem: _sourcesViewComponent
+    readonly property bool browsingFolder: _foldersView.depth > 1
+    readonly property var currentBrowser: browsingFolder ? _foldersView.currentItem : null
+
+    ListModel
+    {
+        id: _sourcesModel
+    }
+
+    Connections
+    {
+        target: Clip.Clip
+
+        function onSourcesChanged()
+        {
+            control.rebuildSourcesModel(_searchField.text)
+        }
+    }
+
+    Connections
+    {
+        target: _foldersView
+
+        function onDepthChanged()
+        {
+            _searchField.text = ""
+            control.clearSearch()
+        }
+    }
+
+    headBar.leftContent: [
+        ToolButton
+        {
+            visible: control.browsingFolder
+            icon.name: "go-previous"
+            onClicked: _foldersView.pop()
+        },
+
+        ToolSeparator
+        {
+            visible: control.browsingFolder
+            bottomPadding: 10
+            topPadding: 10
+        },
+
+        ToolButton
+        {
+            icon.name: "folder-videos"
+            onClicked: ApplicationWindow.window.showGallery()
+        },
+
+        ToolButton
+        {
+            icon.name: "folder"
+            onClicked: ApplicationWindow.window.showCollections()
+        },
+
+        ToolButton
+        {
+            icon.name: "tag"
+            onClicked: ApplicationWindow.window.showTags()
+        },
+
+        ToolSeparator
+        {
+            bottomPadding: 10
+            topPadding: 10
+        },
+
+        Maui.SearchField
+        {
+            id: _searchField
+            enabled: control.browsingFolder
+                     ? (control.currentBrowser ? control.currentBrowser.list.count > 0 : false)
+                     : _sourcesModel.count > 0
+            implicitWidth: 250
+            placeholderText: control.browsingFolder ? i18n("Search videos") : i18n("Search collections")
+            onTextChanged: control.search(text)
+            onCleared: control.clearSearch()
+            Keys.priority: Keys.AfterItem
+            Keys.onReturnPressed: event.accepted = true
+        }
+    ]
+
+    headBar.rightContent: [
+        Maui.ToolButtonMenu
+        {
+            visible: control.browsingFolder
+            icon.name: "view-sort"
+
+            MenuItem
+            {
+                text: i18n("Title (A-Z)")
+                checkable: true
+                autoExclusive: true
+                checked: settings.sortBy === "label" && settings.sortOrder === Qt.AscendingOrder
+                onTriggered:
+                {
+                    settings.sortBy = "label"
+                    settings.sortOrder = Qt.AscendingOrder
+                }
+            }
+
+            MenuItem
+            {
+                text: i18n("Title (Z-A)")
+                checkable: true
+                autoExclusive: true
+                checked: settings.sortBy === "label" && settings.sortOrder === Qt.DescendingOrder
+                onTriggered:
+                {
+                    settings.sortBy = "label"
+                    settings.sortOrder = Qt.DescendingOrder
+                }
+            }
+
+            MenuItem
+            {
+                text: i18n("Date (Newest)")
+                checkable: true
+                autoExclusive: true
+                checked: settings.sortBy === "modified" && settings.sortOrder === Qt.DescendingOrder
+                onTriggered:
+                {
+                    settings.sortBy = "modified"
+                    settings.sortOrder = Qt.DescendingOrder
+                }
+            }
+
+            MenuItem
+            {
+                text: i18n("Date (Oldest)")
+                checkable: true
+                autoExclusive: true
+                checked: settings.sortBy === "modified" && settings.sortOrder === Qt.AscendingOrder
+                onTriggered:
+                {
+                    settings.sortBy = "modified"
+                    settings.sortOrder = Qt.AscendingOrder
+                }
+            }
+
+            MenuItem
+            {
+                text: i18n("Size (Smallest)")
+                checkable: true
+                autoExclusive: true
+                checked: settings.sortBy === "size" && settings.sortOrder === Qt.AscendingOrder
+                onTriggered:
+                {
+                    settings.sortBy = "size"
+                    settings.sortOrder = Qt.AscendingOrder
+                }
+            }
+
+            MenuItem
+            {
+                text: i18n("Size (Largest)")
+                checkable: true
+                autoExclusive: true
+                checked: settings.sortBy === "size" && settings.sortOrder === Qt.DescendingOrder
+                onTriggered:
+                {
+                    settings.sortBy = "size"
+                    settings.sortOrder = Qt.DescendingOrder
+                }
+            }
+
+            MenuItem
+            {
+                text: i18n("Type (A-Z)")
+                checkable: true
+                autoExclusive: true
+                checked: settings.sortBy === "type" && settings.sortOrder === Qt.AscendingOrder
+                onTriggered:
+                {
+                    settings.sortBy = "type"
+                    settings.sortOrder = Qt.AscendingOrder
+                }
+            }
+        },
+
+        ToolSeparator
+        {
+            visible: control.browsingFolder
+            bottomPadding: 10
+            topPadding: 10
+        },
+
+        Maui.ToolButtonMenu
+        {
+            icon.name: "overflow-menu"
+
+            MenuItem
+            {
+                text: i18n("Settings")
+                icon.name: "settings-configure"
+                onTriggered: openSettingsDialog()
+            }
+
+            MenuItem
+            {
+                text: i18n("About")
+                icon.name: "documentinfo"
+                onTriggered: Maui.App.aboutDialog()
+            }
+        }
+    ]
+
+    Item
+    {
+        anchors.fill: parent
+
+        StackView
+        {
+            id: _foldersView
+            anchors.fill: parent
+            initialItem: _sourcesPageComponent
+        }
+    }
 
     Component
     {
-        id: _sourcesViewComponent
+        id: _sourcesPageComponent
 
         Maui.Page
         {
             background: null
-            Maui.Controls.showCSD: true
-            headerMargins: Maui.Style.contentMargins
+            flickable: _sourcesGrid.flickable
+            headBar.visible: false
 
-            headBar.leftContent: [
-                ToolButton
-                {
-                    icon.name: "view-preview"
-                    onClicked: ApplicationWindow.window.showGallery()
-                },
+            Maui.Theme.inherit: false
+            Maui.Theme.colorGroup: Maui.Theme.View
 
-                ToolButton
-                {
-                    icon.name: "folder"
-                    onClicked: ApplicationWindow.window.showCollections()
-                },
+            Component.onCompleted: control.rebuildSourcesModel("")
 
-                ToolButton
-                {
-                    icon.name: "tag"
-                    onClicked: ApplicationWindow.window.showTags()
-                }
-            ]
-
-            headBar.middleContent: Label
+            Maui.GridBrowser
             {
-                text: i18n("Collections")
-                font.weight: Font.DemiBold
-            }
-
-            headBar.rightContent: Maui.ToolButtonMenu
-            {
-                icon.name: "overflow-menu"
-
-                MenuItem
-                {
-                    text: i18n("Settings")
-                    icon.name: "settings-configure"
-                    onTriggered: openSettingsDialog()
-                }
-
-                MenuItem
-                {
-                    text: i18n("About")
-                    icon.name: "documentinfo"
-                    onTriggered: Maui.App.aboutDialog()
-                }
-            }
-
-            Loader
-            {
+                id: _sourcesGrid
                 anchors.fill: parent
-                asynchronous: true
-                sourceComponent: Maui.ListBrowser
+                itemSize: Math.min(260, Math.max(140, Math.floor(availableWidth * 0.3)))
+                itemHeight: itemSize + Maui.Style.rowHeight
+                currentIndex: -1
+                flickable.reuseItems: true
+
+                holder.visible: count === 0
+                holder.emoji: "folder-videos"
+                holder.title: i18n("No Sources!")
+                holder.body: i18n("Add a video source from Settings to browse collections.")
+
+                model: _sourcesModel
+
+                Keys.enabled: true
+                Keys.priority: Keys.AfterItem
+                Keys.onPressed: (event) =>
                 {
-                    id: _sourcesBrowser
-                    anchors.fill: parent
-                    model: Clip.Clip.sourcesModel
+                    if ((event.key === Qt.Key_Return || event.key === Qt.Key_Enter) && _sourcesGrid.currentItem) {
+                        control.openFolder(_sourcesGrid.currentItem.sourceUrl)
+                        event.accepted = true
+                    }
+                }
 
-                    holder.visible: count === 0
-                    holder.emoji: "folder-videos"
-                    holder.title: i18n("No Sources!")
-                    holder.body: i18n("Add a video source from Settings to browse collections.")
+                delegate: Item
+                {
+                    readonly property string sourceUrl: model.url
+                    height: GridView.view.cellHeight
+                    width: GridView.view.cellWidth
 
-                    delegate: Maui.ListDelegate
+                    Maui.CollageItem
                     {
-                        width: ListView.view.width
-                        template.iconSource: modelData.icon
-                        template.iconSizeHint: Maui.Style.iconSizes.small
-                        template.label1.text: modelData.label
-                        template.label2.text: modelData.path || modelData.url
+                        anchors.fill: parent
+                        anchors.margins: !root.isWide ? Maui.Style.space.tiny : Maui.Style.space.big
 
-                        onClicked: control.openFolder(modelData.url)
+                        imageWidth: 120
+                        imageHeight: 120
+                        isCurrentItem: parent.GridView.isCurrentItem
+                        images: model.preview ? String(model.preview).split(",") : []
+                        tooltipText: model.path || model.url
+
+                        template.label1.text: model.label
+                        template.label2.text: model.modified ? Qt.formatDateTime(new Date(model.modified), "d MMM yyyy") : ""
+                        template.iconSource: model.icon
+                        template.iconVisible: true
+
+                        onClicked:
+                        {
+                            _sourcesGrid.currentIndex = index
+                            if (Maui.Handy.singleClick)
+                                control.openFolder(model.url)
+                        }
+
+                        onDoubleClicked:
+                        {
+                            _sourcesGrid.currentIndex = index
+                            if (!Maui.Handy.singleClick)
+                                control.openFolder(model.url)
+                        }
                     }
                 }
             }
@@ -111,66 +331,101 @@ StackView
 
         BrowserLayout
         {
-            property string folderUrl: ""
-            property string folderLabel: ""
+            id: _folderBrowser
+            property string currentFolder: ""
+            readonly property var folderInfo: FB.FM.getFileInfo(currentFolder)
 
             background: null
-            title: folderLabel
-            list.urls: folderUrl.length ? [folderUrl] : []
+            showTitle: false
+            headBar.visible: false
+            list.urls: currentFolder.length ? [currentFolder] : []
             list.recursive: false
-            Maui.Controls.showCSD: true
-            headerMargins: Maui.Style.contentMargins
 
             holder.title: i18n("No Videos!")
             holder.body: i18n("There are no videos in this collection.")
 
-            headBar.leftContent: [
-                ToolButton
+            gridView.header: Loader
+            {
+                width: _folderBrowser.width
+                asynchronous: true
+                sourceComponent: Column
                 {
-                    icon.name: "go-previous"
-                    onClicked: control.pop()
-                },
+                    spacing: Maui.Style.space.medium
 
-                ToolSeparator
-                {
-                    bottomPadding: 10
-                    topPadding: 10
-                },
+                    Maui.SectionHeader
+                    {
+                        width: _folderBrowser.width
+                        label1.text: _folderBrowser.folderInfo.label || _folderBrowser.currentFolder
+                        label2.text: _folderBrowser.folderInfo.path
+                                     ? String(_folderBrowser.folderInfo.path).replace(FB.FM.homePath(), "")
+                                     : _folderBrowser.currentFolder
+                        template.label3.text: i18np("No videos.", "%1 videos", _folderBrowser.list.count)
+                        template.label4.text: _folderBrowser.folderInfo.modified
+                                             ? Qt.formatDateTime(new Date(_folderBrowser.folderInfo.modified), "d MMM yyyy")
+                                             : ""
+                        template.iconSource: _folderBrowser.folderInfo.icon
 
-                ToolButton
-                {
-                    icon.name: "view-preview"
-                    onClicked: ApplicationWindow.window.showGallery()
-                },
-
-                ToolButton
-                {
-                    icon.name: "folder"
-                    onClicked: ApplicationWindow.window.showCollections()
-                },
-
-                ToolButton
-                {
-                    icon.name: "tag"
-                    onClicked: ApplicationWindow.window.showTags()
+                        template.content: ToolButton
+                        {
+                            icon.name: "folder-open"
+                            onClicked: Qt.openUrlExternally(_folderBrowser.currentFolder)
+                        }
+                    }
                 }
-            ]
+            }
 
             onItemClicked: play(item)
         }
     }
 
+    function rebuildSourcesModel(filterText)
+    {
+        const filter = String(filterText || "").trim().toLowerCase()
+        const items = Clip.Clip.sourcesModel
+
+        _sourcesModel.clear()
+
+        for (let i = 0; i < items.length; ++i) {
+            const item = items[i]
+            const label = String(item.label || "").toLowerCase()
+            const path = String(item.path || item.url || "").toLowerCase()
+
+            if (!filter || label.includes(filter) || path.includes(filter))
+                _sourcesModel.append(item)
+        }
+    }
+
     function openFolder(url, filters)
     {
-        currentSourceUrl = url
-        currentSourceLabel = FB.FM.getFileInfo(url).label || url
+        if (!url || url.length === 0)
+            return
 
-        if (control.depth > 1)
-            control.pop()
+        if (_foldersView.depth === 1) {
+            _foldersView.push(_folderViewComponent, ({ currentFolder: url }))
+        } else if (_foldersView.currentItem.currentFolder !== url) {
+            _foldersView.currentItem.currentFolder = url
+        }
 
-        control.push(_folderViewComponent, {
-            folderUrl: currentSourceUrl,
-            folderLabel: currentSourceLabel
-        })
+        _foldersView.forceActiveFocus()
+    }
+
+    function search(text)
+    {
+        if (browsingFolder) {
+            if (currentBrowser)
+                currentBrowser.listModel.filter = text
+        } else {
+            rebuildSourcesModel(text)
+        }
+    }
+
+    function clearSearch()
+    {
+        if (browsingFolder) {
+            if (currentBrowser)
+                currentBrowser.listModel.clearFilters()
+        } else {
+            rebuildSourcesModel("")
+        }
     }
 }

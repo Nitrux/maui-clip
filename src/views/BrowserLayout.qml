@@ -12,6 +12,8 @@ Maui.AltBrowser
     id: control
 
     background: null
+    property string searchPlaceholder: i18n("Search videos")
+    property bool showSortMenu: true
 
     property alias list: _collectionList
     property alias urls: _collectionList.urls
@@ -31,33 +33,6 @@ Maui.AltBrowser
         { text: i18n("Size (Largest)"), sort: "size", order: Qt.DescendingOrder },
         { text: i18n("Type (A-Z)"), sort: "type", order: Qt.AscendingOrder }
     ]
-    readonly property var sortLabels: sortOptions.map((option) => option.text)
-    property bool sortSyncReady: false
-
-    function currentSortIndex()
-    {
-        for (let i = 0; i < sortOptions.length; i++) {
-            const option = sortOptions[i]
-
-            if (option.sort === settings.sortBy && option.order === settings.sortOrder)
-                return i
-        }
-
-        return 0
-    }
-
-    function applySort(index)
-    {
-        if (index < 0 || index >= sortOptions.length)
-            return
-
-        const option = sortOptions[index]
-
-        _collectionModel.sortOrder = option.order
-        _collectionModel.sort = option.sort
-        settings.sortOrder = option.order
-        settings.sortBy = option.sort
-    }
 
     headBar.forceCenterMiddleContent: false
     gridView.itemSize: 180
@@ -99,45 +74,139 @@ Maui.AltBrowser
         model: control.model
     }
 
-    headBar.middleContent: Maui.SearchField
-    {
-        id: _searchField
-        enabled: _collectionList.count > 0
-        implicitWidth: 250
-        Layout.maximumWidth: 500
-        Layout.alignment: Qt.AlignCenter
-
-        placeholderText: i18np("Search %1 video", "Search %1 videos", _collectionList.count)
-        onTextChanged: _collectionModel.filter = text
-        onCleared: _collectionModel.filter = ""
-        Keys.priority: Keys.AfterItem
-        Keys.onReturnPressed: event.accepted = true
-    }
-
-    headBar.rightContent: [
-        Label
+    headBar.leftContent: [
+        ToolButton
         {
-            text: i18n("Sort")
-            font.weight: Font.DemiBold
-            verticalAlignment: Text.AlignVCenter
+            icon.name: "folder-videos"
+            onClicked: ApplicationWindow.window.showGallery()
         },
 
-        ComboBox
+        ToolButton
         {
-            id: _sortComboBox
-            implicitWidth: 190
-            model: control.sortLabels
+            icon.name: "folder"
+            onClicked: ApplicationWindow.window.showCollections()
+        },
 
-            Component.onCompleted:
+        ToolButton
+        {
+            icon.name: "tag"
+            onClicked: ApplicationWindow.window.showTags()
+        },
+
+        ToolSeparator
+        {
+            bottomPadding: 10
+            topPadding: 10
+        },
+
+        Maui.SearchField
+        {
+            id: _searchField
+            enabled: _collectionList.count > 0
+            implicitWidth: 250
+            placeholderText: control.searchPlaceholder
+            onTextChanged: _collectionModel.filter = text
+            onCleared: _collectionModel.filter = ""
+            Keys.priority: Keys.AfterItem
+            Keys.onReturnPressed: event.accepted = true
+        }
+    ]
+
+    headBar.rightContent: [
+        Maui.ToolButtonMenu
+        {
+            visible: control.showSortMenu
+            icon.name: "view-sort"
+
+            MenuItem
             {
-                currentIndex = control.currentSortIndex()
-                control.sortSyncReady = true
+                text: i18n("Title (A-Z)")
+                checkable: true
+                autoExclusive: true
+                checked: settings.sortBy === "label" && settings.sortOrder === Qt.AscendingOrder
+                onTriggered:
+                {
+                    settings.sortBy = "label"
+                    settings.sortOrder = Qt.AscendingOrder
+                }
             }
 
-            onCurrentIndexChanged:
+            MenuItem
             {
-                if (control.sortSyncReady)
-                    control.applySort(currentIndex)
+                text: i18n("Title (Z-A)")
+                checkable: true
+                autoExclusive: true
+                checked: settings.sortBy === "label" && settings.sortOrder === Qt.DescendingOrder
+                onTriggered:
+                {
+                    settings.sortBy = "label"
+                    settings.sortOrder = Qt.DescendingOrder
+                }
+            }
+
+            MenuItem
+            {
+                text: i18n("Date (Newest)")
+                checkable: true
+                autoExclusive: true
+                checked: settings.sortBy === "modified" && settings.sortOrder === Qt.DescendingOrder
+                onTriggered:
+                {
+                    settings.sortBy = "modified"
+                    settings.sortOrder = Qt.DescendingOrder
+                }
+            }
+
+            MenuItem
+            {
+                text: i18n("Date (Oldest)")
+                checkable: true
+                autoExclusive: true
+                checked: settings.sortBy === "modified" && settings.sortOrder === Qt.AscendingOrder
+                onTriggered:
+                {
+                    settings.sortBy = "modified"
+                    settings.sortOrder = Qt.AscendingOrder
+                }
+            }
+
+            MenuItem
+            {
+                text: i18n("Size (Smallest)")
+                checkable: true
+                autoExclusive: true
+                checked: settings.sortBy === "size" && settings.sortOrder === Qt.AscendingOrder
+                onTriggered:
+                {
+                    settings.sortBy = "size"
+                    settings.sortOrder = Qt.AscendingOrder
+                }
+            }
+
+            MenuItem
+            {
+                text: i18n("Size (Largest)")
+                checkable: true
+                autoExclusive: true
+                checked: settings.sortBy === "size" && settings.sortOrder === Qt.DescendingOrder
+                onTriggered:
+                {
+                    settings.sortBy = "size"
+                    settings.sortOrder = Qt.DescendingOrder
+                }
+            }
+
+            MenuItem
+            {
+                text: i18n("Type (A-Z)")
+                checkable: true
+                autoExclusive: true
+                checked: settings.sortBy === "type" && settings.sortOrder === Qt.AscendingOrder
+                onTriggered:
+                {
+                    settings.sortBy = "type"
+                    settings.sortOrder = Qt.AscendingOrder
+                }
             }
         },
 
@@ -145,6 +214,7 @@ Maui.AltBrowser
         {
             bottomPadding: 10
             topPadding: 10
+            visible: control.showSortMenu
         },
 
         Maui.ToolButtonMenu

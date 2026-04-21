@@ -13,10 +13,8 @@ set(clipSRCS
     main.cpp
     models/videosmodel.cpp
     models/tagsmodel.cpp
-    models/playlistmodel.cpp
     utils/clip.cpp
-    controllers/lockmanager.cpp
-    controllers/linux/solidlockbackend.cpp)
+)
 
 set(clip_ASSETS
     assets.qrc)
@@ -32,8 +30,6 @@ if(CLIP_BUILD_BUNDLED_PREVIEW_PROVIDER)
         utils/ffmpegthumbs/imagewriter.cpp
         utils/ffmpegthumbs/videothumbnailer.cpp)
 endif()
-
-qt_add_dbus_interface(clipSRCS controllers/linux/org.freedesktop.ScreenSaver.xml screensaverdbusinterface)
 
 qt_add_executable(${PROJECT_NAME}
     MANUAL_FINALIZATION
@@ -52,7 +48,6 @@ qt_add_qml_module(${PROJECT_NAME} URI app.maui.clip
     views/player/MPVPlayer.qml
     views/collection/CollectionView.qml
     views/collection/CollectionsView.qml
-    views/SelectionBar.qml
     views/tags/TagsView.qml
     views/player/Playlist.qml
     views/tags/TagsGrid.qml
@@ -61,11 +56,6 @@ qt_add_qml_module(${PROJECT_NAME} URI app.maui.clip
     views/ListDelegate.qml
     views/settings/SettingsDialog.qml
     views/player/Player.qml)
-
-target_link_libraries(${PROJECT_NAME}
-    PRIVATE
-    Qt6::DBus
-    Qt6::Widgets)
 
 target_compile_definitions(${PROJECT_NAME}
     PRIVATE
@@ -104,8 +94,7 @@ if(CLIP_BUILD_BUNDLED_PREVIEW_PROVIDER)
 endif()
 
 install(TARGETS ${PROJECT_NAME} ${KDE_INSTALL_TARGETS_DEFAULT_ARGS})
-install(FILES org.maui.clip.desktop DESTINATION ${KDE_INSTALL_APPDIR})
-#TODO: port to ecm_install_icons()
-install(FILES assets/clip.svg DESTINATION ${KDE_INSTALL_ICONDIR}/hicolor/scalable/apps)
+install(FILES org.kde.clip.desktop DESTINATION ${KDE_INSTALL_APPDIR})
+install(FILES assets/maui-clip.svg DESTINATION ${KDE_INSTALL_ICONDIR}/hicolor/scalable/apps)
 
 qt_finalize_target(${PROJECT_NAME})

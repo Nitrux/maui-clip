@@ -263,7 +263,7 @@ Maui.ApplicationWindow
                     visible: active
                     sourceComponent: Maui.Holder
                     {
-                        emoji: "qrc:/img/assets/media-playback-start.svg"
+                        emoji: "media-playback-start"
                         title: i18n("Nothing Here!")
                         body: _playerView.error !== MediaPlayer.NoError ? _playerView.errorString : i18n("Open a new video from your collection or file system.")
                         actions: [
@@ -297,7 +297,7 @@ Maui.ApplicationWindow
 
                     ToolButton
                     {
-                        icon.name: "view-preview"
+                        icon.name: "folder-videos"
                         onClicked: showGallery()
                     },
 

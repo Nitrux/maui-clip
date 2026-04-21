@@ -11,13 +11,15 @@ Maui.AltBrowser
     id: control
 
     background: null
+    Maui.Controls.showCSD: true
+    headerMargins: Maui.Style.contentMargins
     gridView.itemSize: Math.min(200, Math.max(100, Math.floor(width * 0.3)))
     gridView.itemHeight: gridView.itemSize + Maui.Style.rowHeight
 
     headBar.forceCenterMiddleContent: root.isWide
     holder.visible: _tagsList.count === 0
     holder.emojiSize: Maui.Style.iconSizes.huge
-    holder.emoji: "qrc:/img/assets/tag.svg"
+    holder.emoji: "tag"
     holder.title: i18n("No Tags!")
     holder.body: i18n("Add a new tag to start organizing your video collection.")
 
@@ -30,7 +32,7 @@ Maui.AltBrowser
     headBar.leftContent: [
         ToolButton
         {
-            icon.name: "view-preview"
+            icon.name: "folder-videos"
             onClicked: ApplicationWindow.window.showGallery()
         },
 
@@ -52,30 +54,42 @@ Maui.AltBrowser
             topPadding: 10
         },
 
-        Maui.SearchField
+        Label
         {
-            Layout.fillWidth: true
-            Layout.alignment: Qt.AlignCenter
-            Layout.maximumWidth: 500
-            placeholderText: i18n("Filter tags")
-            onTextChanged: _collectionModel.filter = text
-            onCleared: _collectionModel.filter = ""
+            text: i18n("Sort")
+            font.weight: Font.DemiBold
+            verticalAlignment: Text.AlignVCenter
+        },
+
+        ComboBox
+        {
+            id: _sortComboBox
+            implicitWidth: 180
+            currentIndex: 0
+
+            model: [
+                i18n("Name (A-Z)"),
+                i18n("Name (Z-A)"),
+                i18n("Date (Newest)"),
+                i18n("Date (Oldest)")
+            ]
+
+            readonly property var sortOptions: [
+                { sort: "tag", order: Qt.AscendingOrder },
+                { sort: "tag", order: Qt.DescendingOrder },
+                { sort: "modified", order: Qt.DescendingOrder },
+                { sort: "modified", order: Qt.AscendingOrder }
+            ]
+
+            onActivated: (index) =>
+            {
+                _collectionModel.sort = sortOptions[index].sort
+                _collectionModel.sortOrder = sortOptions[index].order
+            }
         }
     ]
 
     headBar.rightContent: [
-        ToolButton
-        {
-            icon.name: "list-add"
-            onClicked: newTagDialog.open()
-        },
-
-        ToolSeparator
-        {
-            bottomPadding: 10
-            topPadding: 10
-        },
-
         Maui.ToolButtonMenu
         {
             icon.name: "overflow-menu"
@@ -99,8 +113,8 @@ Maui.AltBrowser
     model: Maui.BaseModel
     {
         id: _collectionModel
-        sortOrder: Qt.DescendingOrder
-        sort: "modified"
+        sortOrder: Qt.AscendingOrder
+        sort: "tag"
         recursiveFilteringEnabled: true
         sortCaseSensitivity: Qt.CaseInsensitive
         filterCaseSensitivity: Qt.CaseInsensitive
