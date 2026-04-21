@@ -11,12 +11,15 @@ StackView
     objectName: "TagsView"
     background: null
 
+    property bool useInternalChrome: true
     property string currentTag: ""
+    readonly property bool filteringTag: depth > 1
     property Flickable flickable: currentItem.flickable
 
     initialItem: TagsGrid
     {
         id: _tagsGrid
+        useInternalChrome: control.useInternalChrome
     }
 
     Component
@@ -26,6 +29,7 @@ StackView
         BrowserLayout
         {
             id: _tagBrowser
+            useInternalChrome: control.useInternalChrome
             showTitle: false
             title: control.currentTag
             background: null
@@ -33,55 +37,6 @@ StackView
             list.recursive: false
             holder.title: i18n("No Videos!")
             holder.body: i18n("There are no videos associated with this tag.")
-            headBar.visible: true
-            headBar.leftContent: [
-                ToolButton
-                {
-                    icon.name: "go-previous"
-                    onClicked: control.pop()
-                },
-
-                ToolSeparator
-                {
-                    bottomPadding: 10
-                    topPadding: 10
-                },
-
-                ToolButton
-                {
-                    icon.name: "folder-videos"
-                    onClicked: ApplicationWindow.window.showGallery()
-                },
-
-                ToolButton
-                {
-                    icon.name: "folder"
-                    onClicked: ApplicationWindow.window.showCollections()
-                },
-
-                ToolButton
-                {
-                    icon.name: "tag"
-                    onClicked: ApplicationWindow.window.showTags()
-                },
-
-                ToolSeparator
-                {
-                    bottomPadding: 10
-                    topPadding: 10
-                },
-
-                Maui.SearchField
-                {
-                    enabled: _tagBrowser.list.count > 0
-                    implicitWidth: 250
-                    placeholderText: i18n("Search videos")
-                    onTextChanged: _tagBrowser.listModel.filter = text
-                    onCleared: _tagBrowser.listModel.filter = ""
-                    Keys.priority: Keys.AfterItem
-                    Keys.onReturnPressed: event.accepted = true
-                }
-            ]
 
             onItemClicked: play(item)
         }
@@ -95,5 +50,33 @@ StackView
             control.pop()
 
         control.push(_filterViewComponent)
+    }
+
+    function search(text)
+    {
+        if (filteringTag)
+            currentItem.search(text)
+    }
+
+    function clearSearch()
+    {
+        if (filteringTag)
+            currentItem.clearSearch()
+    }
+
+    function goBack()
+    {
+        if (filteringTag)
+            control.pop()
+    }
+
+    function currentSortIndex()
+    {
+        return _tagsGrid.currentSortIndex()
+    }
+
+    function applySort(index)
+    {
+        _tagsGrid.applySort(index)
     }
 }

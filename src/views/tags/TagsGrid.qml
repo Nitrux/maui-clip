@@ -11,11 +11,13 @@ Maui.AltBrowser
     id: control
 
     background: null
+    property bool useInternalChrome: true
     Maui.Controls.showCSD: true
     headerMargins: Maui.Style.contentMargins
     gridView.itemSize: Math.min(200, Math.max(100, Math.floor(width * 0.3)))
     gridView.itemHeight: gridView.itemSize + Maui.Style.rowHeight
 
+    headBar.visible: useInternalChrome
     headBar.forceCenterMiddleContent: root.isWide
     holder.visible: _tagsList.count === 0
     holder.emojiSize: Maui.Style.iconSizes.huge
@@ -178,5 +180,28 @@ Maui.AltBrowser
                     populateGrid(model.tag)
             }
         }
+    }
+
+    readonly property var sortOptions: _sortComboBox.sortOptions
+
+    function currentSortIndex()
+    {
+        for (let i = 0; i < sortOptions.length; ++i) {
+            const option = sortOptions[i]
+
+            if (_collectionModel.sort === option.sort && _collectionModel.sortOrder === option.order)
+                return i
+        }
+
+        return 0
+    }
+
+    function applySort(index)
+    {
+        if (index < 0 || index >= sortOptions.length)
+            return
+
+        _collectionModel.sort = sortOptions[index].sort
+        _collectionModel.sortOrder = sortOptions[index].order
     }
 }

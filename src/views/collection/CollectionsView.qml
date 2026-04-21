@@ -15,6 +15,7 @@ Maui.Page
     objectName: "CollectionView"
 
     background: null
+    property bool useInternalChrome: true
     Maui.Controls.showCSD: true
     headerMargins: Maui.Style.contentMargins
 
@@ -51,6 +52,8 @@ Maui.Page
             control.clearSearch()
         }
     }
+
+    headBar.visible: useInternalChrome
 
     headBar.leftContent: [
         ToolButton
@@ -428,5 +431,11 @@ Maui.Page
         } else {
             rebuildSourcesModel("")
         }
+    }
+
+    function goBack()
+    {
+        if (browsingFolder)
+            _foldersView.pop()
     }
 }

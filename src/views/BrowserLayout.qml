@@ -12,6 +12,7 @@ Maui.AltBrowser
     id: control
 
     background: null
+    property bool useInternalChrome: true
     property string searchPlaceholder: i18n("Search videos")
     property bool showSortMenu: true
 
@@ -34,6 +35,7 @@ Maui.AltBrowser
         { text: i18n("Type (A-Z)"), sort: "type", order: Qt.AscendingOrder }
     ]
 
+    headBar.visible: useInternalChrome
     headBar.forceCenterMiddleContent: false
     gridView.itemSize: 180
 
@@ -473,5 +475,15 @@ Maui.AltBrowser
             return selectionBar.uris.join("\n")
 
         return url
+    }
+
+    function search(text)
+    {
+        _collectionModel.filter = text
+    }
+
+    function clearSearch()
+    {
+        _collectionModel.clearFilters()
     }
 }
