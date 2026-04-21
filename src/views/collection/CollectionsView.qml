@@ -239,6 +239,7 @@ Maui.Page
         {
             id: _foldersView
             anchors.fill: parent
+            background: null
             initialItem: _sourcesPageComponent
         }
     }

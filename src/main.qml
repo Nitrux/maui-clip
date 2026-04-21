@@ -167,6 +167,7 @@ Maui.ApplicationWindow
     {
         id: _stackView
         anchors.fill: parent
+        background: null
         initialItem: initModule === "viewer" ? _sideBarView : _galleryViewComponent
         Maui.Theme.colorSet: Maui.Theme.View
 
@@ -192,6 +193,7 @@ Maui.ApplicationWindow
         {
             id: _sideBarView
             focus: true
+            visible: StackView.status !== StackView.Inactive
             readonly property bool active: StackView.status === StackView.Active
 
             sideBar.enabled: false
