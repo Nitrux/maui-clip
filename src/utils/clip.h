@@ -25,6 +25,7 @@ public:
     Clip &operator=(Clip &&) = delete;
 
     bool mpvAvailable() const;
+    void setMpvAvailable(bool available);
 
 public Q_SLOTS:
     QVariantList sourcesModel() const;
@@ -51,5 +52,7 @@ Q_SIGNALS:
     void refreshViews(QVariantMap tables);
     void openUrls(QStringList urls);
     void sourcesChanged();
-};
 
+private:
+    bool m_mpvAvailable = false;
+};

@@ -33,6 +33,8 @@ include(KDEInstallDirs)
 find_package(Qt6 ${REQUIRED_QT_VERSION} REQUIRED NO_MODULE COMPONENTS Core Sql Qml Quick Multimedia Network)
 find_package(KF6 ${REQUIRED_KF_VERSION} REQUIRED COMPONENTS I18n CoreAddons)
 find_package(MauiKit4 REQUIRED COMPONENTS FileBrowsing)
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(MPV REQUIRED IMPORTED_TARGET mpv)
 
 include(KDECMakeSettings)
 include(KDECompilerSettings NO_POLICY_SCOPE)
@@ -41,7 +43,6 @@ include(ECMSetupVersion)
 include(ECMSourceVersionControl)
 include(FeatureSummary)
 
-option(MPV_AVAILABLE "Use MPV library if it is avalibale, otherwise use default fallback implementation from QtMultimedia" FALSE)
 option(CLIP_BUILD_BUNDLED_PREVIEW_PROVIDER "Build Clip's bundled FFmpeg/TagLib preview provider" OFF)
 
 if(CLIP_BUILD_BUNDLED_PREVIEW_PROVIDER)

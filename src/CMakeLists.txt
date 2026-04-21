@@ -1,13 +1,11 @@
 remove_definitions(-DQT_NO_CAST_FROM_ASCII -DQT_STRICT_ITERATORS -DQT_NO_CAST_FROM_BYTEARRAY -DQT_NO_URL_CAST_FROM_STRING)
 
-if(MPV_AVAILABLE)
-    set(mpvSRCS
-        backends/mpv/mpvobject.cpp
-        backends/mpv/track.cpp
-        backends/mpv/tracksmodel.cpp
-        backends/mpv/subtitlesfoldersmodel.cpp
-        backends/mpv/qthelper.h)
-endif()
+set(mpvSRCS
+    backends/mpv/mpvobject.cpp
+    backends/mpv/track.cpp
+    backends/mpv/tracksmodel.cpp
+    backends/mpv/subtitlesfoldersmodel.cpp
+    backends/mpv/qthelper.h)
 
 set(clipSRCS
     main.cpp
@@ -64,14 +62,9 @@ target_compile_definitions(${PROJECT_NAME}
 
 target_compile_options(${PROJECT_NAME} PRIVATE -fexceptions)
 
-if(MPV_AVAILABLE)
-    target_link_libraries(${PROJECT_NAME} PRIVATE mpv)
-    add_definitions(-DMPV_AVAILABLE)
-    target_compile_definitions(${PROJECT_NAME} PUBLIC MPV_AVAILABLE)
-endif()
-
 target_link_libraries(${PROJECT_NAME}
     PRIVATE
+    PkgConfig::MPV
     MauiKit4
     MauiKit4::FileBrowsing
     Qt6::Network

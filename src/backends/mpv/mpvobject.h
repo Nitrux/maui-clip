@@ -175,7 +175,7 @@ class MpvObject : public QQuickFramebufferObject
     friend class MpvRenderer;
 
 public:
-    MpvObject(QQuickItem * parent = 0);
+    MpvObject(QQuickItem * parent = nullptr);
     virtual ~MpvObject();
     virtual Renderer *createRenderer() const override;
 

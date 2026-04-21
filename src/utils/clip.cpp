@@ -52,9 +52,7 @@ QStringList sanitizeSourcePaths(const QStringList &paths)
 Clip::Clip(QObject *parent)
     : QObject(parent)
 {
-#ifdef MPV_AVAILABLE
     FMStatic::createDir(FMStatic::PicturesPath, "screenshots");
-#endif
 }
 
 const QStringList Clip::getSourcePaths()
@@ -109,11 +107,12 @@ void Clip::removeSourcePath(const QString &path)
 
 bool Clip::mpvAvailable() const
 {
-#ifdef MPV_AVAILABLE
-    return true;
-#else
-    return false;
-#endif
+    return m_mpvAvailable;
+}
+
+void Clip::setMpvAvailable(bool available)
+{
+    m_mpvAvailable = available;
 }
 
 QVariantList Clip::sourcesModel() const

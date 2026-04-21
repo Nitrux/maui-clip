@@ -18,6 +18,8 @@
 #include <QObject>
 #include <QOpenGLContext>
 #include <QOpenGLFramebufferObject>
+#include <QOpenGLFramebufferObjectFormat>
+#include <QOpenGLFunctions>
 #include <QProcess>
 #include <QQuickWindow>
 #include <QStandardPaths>
@@ -45,9 +47,25 @@ MpvRenderer::MpvRenderer(MpvObject *new_obj)
 
 void MpvRenderer::render()
 {
+    if (!obj->mpv_gl || !obj->window()) {
+        return;
+    }
+
     obj->window()->beginExternalCommands();
 
     QOpenGLFramebufferObject *fbo = framebufferObject();
+    if (!fbo) {
+        obj->window()->endExternalCommands();
+        return;
+    }
+
+    auto *gl = QOpenGLContext::currentContext() ? QOpenGLContext::currentContext()->functions() : nullptr;
+
+    if (gl) {
+        gl->glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+        gl->glClear(GL_COLOR_BUFFER_BIT);
+    }
+
     mpv_opengl_fbo mpfbo;
     mpfbo.fbo = static_cast<int>(fbo->handle());
     mpfbo.w = fbo->width();
@@ -89,7 +107,13 @@ QOpenGLFramebufferObject * MpvRenderer::createFramebufferObject(const QSize &siz
         Q_EMIT obj->ready();
     }
 
-    return QQuickFramebufferObject::Renderer::createFramebufferObject(size);
+    QOpenGLFramebufferObjectFormat format;
+    format.setAttachment(QOpenGLFramebufferObject::CombinedDepthStencil);
+#ifdef GL_RGBA8
+    format.setInternalTextureFormat(GL_RGBA8);
+#endif
+
+    return new QOpenGLFramebufferObject(size, format);
 }
 
 MpvObject::MpvObject(QQuickItem * parent)

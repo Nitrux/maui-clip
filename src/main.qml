@@ -21,8 +21,6 @@ Maui.ApplicationWindow
 {
     id: root
 
-    Maui.Style.styleType: _sideBarView.active ? Maui.Style.Dark : undefined
-
     title: _playerView.currentVideo.label || i18n("Clip")
     color: "transparent"
     background: null
@@ -168,7 +166,7 @@ Maui.ApplicationWindow
         id: _stackView
         anchors.fill: parent
         background: null
-        initialItem: initModule === "viewer" ? _sideBarView : _galleryViewComponent
+        initialItem: _galleryViewComponent
         Maui.Theme.colorSet: Maui.Theme.View
 
         Component
@@ -466,29 +464,19 @@ Maui.ApplicationWindow
         }
     }
 
-    function ensureMainView()
-    {
-        if (_sideBarView.active)
-        {
-            if (_stackView.depth === 1)
-                _stackView.replace(_sideBarView, _galleryViewComponent)
-            else
-                _stackView.pop()
-        }
-
-        if (_stackView.currentItem.objectName !== "GalleryView" && _stackView.depth > 1)
-            _stackView.pop(null)
-    }
-
     function showGallery()
     {
-        ensureMainView()
+        _stackView.pop(null)
         _stackView.currentItem.forceActiveFocus()
     }
 
     function showCollections()
     {
-        ensureMainView()
+        if (_stackView.currentItem.objectName === "CollectionView")
+            return
+
+        if (_sideBarView.active)
+            _stackView.pop()
 
         if (_stackView.currentItem.objectName !== "CollectionView")
             _stackView.push(_collectionsViewComponent)
@@ -498,7 +486,11 @@ Maui.ApplicationWindow
 
     function showTags()
     {
-        ensureMainView()
+        if (_stackView.currentItem.objectName === "TagsView")
+            return
+
+        if (_sideBarView.active)
+            _stackView.pop()
 
         if (_stackView.currentItem.objectName !== "TagsView")
             _stackView.push(_tagsViewComponent)
@@ -516,10 +508,7 @@ Maui.ApplicationWindow
     {
         if (_sideBarView.active)
         {
-            if (_stackView.depth === 1)
-                _stackView.replace(_sideBarView, _galleryViewComponent)
-            else
-                _stackView.pop()
+            _stackView.pop()
         } else {
             _stackView.push(_sideBarView)
         }
