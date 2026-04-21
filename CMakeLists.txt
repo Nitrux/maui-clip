@@ -29,12 +29,30 @@ find_package(ECM ${REQUIRED_KF_VERSION} REQUIRED NO_MODULE)
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" ${ECM_MODULE_PATH})
 
 include(KDEInstallDirs)
+include(CheckCXXCompilerFlag)
 
 find_package(Qt6 ${REQUIRED_QT_VERSION} REQUIRED NO_MODULE COMPONENTS Core Sql Qml Quick Multimedia Network)
 find_package(KF6 ${REQUIRED_KF_VERSION} REQUIRED COMPONENTS I18n CoreAddons)
 find_package(MauiKit4 REQUIRED COMPONENTS FileBrowsing)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(MPV REQUIRED IMPORTED_TARGET mpv)
+
+set(CLIP_ARCH_OPTIMIZATION_FLAGS "")
+
+if(NOT CMAKE_CROSSCOMPILING AND CMAKE_HOST_SYSTEM_PROCESSOR MATCHES "^(x86_64|X86_64|amd64|AMD64)$")
+    check_cxx_compiler_flag("-march=x86-64-v3" CLIP_COMPILER_SUPPORTS_X86_64_V3)
+
+    if(CLIP_COMPILER_SUPPORTS_X86_64_V3)
+        list(APPEND CLIP_ARCH_OPTIMIZATION_FLAGS -march=x86-64-v3)
+
+        check_cxx_compiler_flag("-mtune=generic" CLIP_COMPILER_SUPPORTS_MTUNE_GENERIC)
+        if(CLIP_COMPILER_SUPPORTS_MTUNE_GENERIC)
+            list(APPEND CLIP_ARCH_OPTIMIZATION_FLAGS -mtune=generic)
+        endif()
+
+        message(STATUS "Enabling x86-64-v3 optimizations for Clip on native x86_64 builds")
+    endif()
+endif()
 
 include(KDECMakeSettings)
 include(KDECompilerSettings NO_POLICY_SCOPE)

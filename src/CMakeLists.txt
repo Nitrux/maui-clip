@@ -60,7 +60,7 @@ target_compile_definitions(${PROJECT_NAME}
     $<$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>:QT_QML_DEBUG>
     $<$<BOOL:${CLIP_BUILD_BUNDLED_PREVIEW_PROVIDER}>:CLIP_BUILD_BUNDLED_PREVIEW_PROVIDER>)
 
-target_compile_options(${PROJECT_NAME} PRIVATE -fexceptions)
+target_compile_options(${PROJECT_NAME} PRIVATE -fexceptions ${CLIP_ARCH_OPTIMIZATION_FLAGS})
 
 target_link_libraries(${PROJECT_NAME}
     PRIVATE
