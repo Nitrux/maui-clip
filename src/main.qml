@@ -30,19 +30,17 @@ Maui.ApplicationWindow
 
     readonly property alias player: _playerView
     readonly property alias selectionBar: _selectionBar
-    readonly property var currentRoute: _libraryTabs.currentIndex === 0 ? _galleryView
-                                      : (_libraryTabs.currentIndex === 1 ? _collectionsView
-                                         : (_libraryTabs.currentIndex === 2 ? _tagsView
-                                            : _playlist))
-    readonly property bool galleryActive: _libraryTabs.currentIndex === 0
-    readonly property bool collectionsActive: _libraryTabs.currentIndex === 1
-    readonly property bool tagsActive: _libraryTabs.currentIndex === 2
-    readonly property bool playlistActive: _libraryTabs.currentIndex === 3
+    readonly property var currentRoute: _libraryTabs.currentIndex === 0 ? _collectionsView
+                                      : (_libraryTabs.currentIndex === 1 ? _tagsView
+                                         : _playlist)
+    readonly property bool collectionsActive: _libraryTabs.currentIndex === 0
+    readonly property bool tagsActive: _libraryTabs.currentIndex === 1
+    readonly property bool playlistActive: _libraryTabs.currentIndex === 2
     readonly property bool collectionsFolderActive: collectionsActive && currentRoute && currentRoute.browsingFolder
     readonly property bool tagsFilterActive: tagsActive && currentRoute && currentRoute.filteringTag
     readonly property bool tagsGridActive: tagsActive && currentRoute && !currentRoute.filteringTag
-    readonly property bool browserSearchVisible: galleryActive || collectionsActive || tagsFilterActive
-    readonly property bool browserSortVisible: galleryActive || collectionsFolderActive
+    readonly property bool browserSearchVisible: collectionsActive || tagsFilterActive
+    readonly property bool browserSortVisible: collectionsFolderActive
     readonly property bool shellBackVisible: collectionsFolderActive || tagsFilterActive
     readonly property bool fullScreenPlaybackChromeAutoHide: settings.hidePlayerChromeInFullScreen
                                                              && root.visibility === Window.FullScreen
@@ -56,7 +54,7 @@ Maui.ApplicationWindow
                                                      : (tagsFilterActive
                                                         ? i18n("Search videos")
                                                         : (collectionsActive
-                                                           ? (collectionsFolderActive ? i18n("Search videos") : i18n("Search collections"))
+                                                           ? (collectionsFolderActive ? i18n("Search videos") : i18n("Search library"))
                                                            : i18n("Search videos")))
 
     Maui.WindowBlur
@@ -237,26 +235,19 @@ Maui.ApplicationWindow
     {
         sequence: "Ctrl+1"
         context: Qt.WindowShortcut
-        onActivated: showGallery()
+        onActivated: showCollections()
     }
 
     Shortcut
     {
         sequence: "Ctrl+2"
         context: Qt.WindowShortcut
-        onActivated: showCollections()
-    }
-
-    Shortcut
-    {
-        sequence: "Ctrl+3"
-        context: Qt.WindowShortcut
         onActivated: showTags()
     }
 
     Shortcut
     {
-        sequence: "Ctrl+4"
+        sequence: "Ctrl+3"
         context: Qt.WindowShortcut
         onActivated: showQueue()
     }
@@ -302,20 +293,6 @@ Maui.ApplicationWindow
                 ToolTip.timeout: 5000
                 ToolTip.visible: hovered
                 ToolTip.text: i18n("Toggle sidebar")
-            },
-
-            ToolSeparator
-            {
-                visible: shellBackVisible
-                bottomPadding: 10
-                topPadding: 10
-            },
-
-            ToolButton
-            {
-                visible: shellBackVisible
-                icon.name: "go-previous"
-                onClicked: handleToolbarBack()
             }
         ]
 
@@ -341,168 +318,6 @@ Maui.ApplicationWindow
         }
 
         headBar.rightContent: [
-            Maui.ToolButtonMenu
-            {
-                visible: tagsGridActive
-                icon.name: "view-sort"
-
-                MenuItem
-                {
-                    text: i18n("Name (A-Z)")
-                    checkable: true
-                    autoExclusive: true
-                    checked: currentRoute && typeof currentRoute.currentSortIndex === "function" && currentRoute.currentSortIndex() === 0
-                    onTriggered:
-                    {
-                        if (currentRoute && currentRoute.applySort)
-                            currentRoute.applySort(0)
-                    }
-                }
-
-                MenuItem
-                {
-                    text: i18n("Name (Z-A)")
-                    checkable: true
-                    autoExclusive: true
-                    checked: currentRoute && typeof currentRoute.currentSortIndex === "function" && currentRoute.currentSortIndex() === 1
-                    onTriggered:
-                    {
-                        if (currentRoute && currentRoute.applySort)
-                            currentRoute.applySort(1)
-                    }
-                }
-
-                MenuItem
-                {
-                    text: i18n("Date (Newest)")
-                    checkable: true
-                    autoExclusive: true
-                    checked: currentRoute && typeof currentRoute.currentSortIndex === "function" && currentRoute.currentSortIndex() === 2
-                    onTriggered:
-                    {
-                        if (currentRoute && currentRoute.applySort)
-                            currentRoute.applySort(2)
-                    }
-                }
-
-                MenuItem
-                {
-                    text: i18n("Date (Oldest)")
-                    checkable: true
-                    autoExclusive: true
-                    checked: currentRoute && typeof currentRoute.currentSortIndex === "function" && currentRoute.currentSortIndex() === 3
-                    onTriggered:
-                    {
-                        if (currentRoute && currentRoute.applySort)
-                            currentRoute.applySort(3)
-                    }
-                }
-            },
-
-            Maui.ToolButtonMenu
-            {
-                visible: browserSortVisible
-                icon.name: "view-sort"
-
-                MenuItem
-                {
-                    text: i18n("Title (A-Z)")
-                    checkable: true
-                    autoExclusive: true
-                    checked: settings.sortBy === "label" && settings.sortOrder === Qt.AscendingOrder
-                    onTriggered:
-                    {
-                        settings.sortBy = "label"
-                        settings.sortOrder = Qt.AscendingOrder
-                    }
-                }
-
-                MenuItem
-                {
-                    text: i18n("Title (Z-A)")
-                    checkable: true
-                    autoExclusive: true
-                    checked: settings.sortBy === "label" && settings.sortOrder === Qt.DescendingOrder
-                    onTriggered:
-                    {
-                        settings.sortBy = "label"
-                        settings.sortOrder = Qt.DescendingOrder
-                    }
-                }
-
-                MenuItem
-                {
-                    text: i18n("Date (Newest)")
-                    checkable: true
-                    autoExclusive: true
-                    checked: settings.sortBy === "modified" && settings.sortOrder === Qt.DescendingOrder
-                    onTriggered:
-                    {
-                        settings.sortBy = "modified"
-                        settings.sortOrder = Qt.DescendingOrder
-                    }
-                }
-
-                MenuItem
-                {
-                    text: i18n("Date (Oldest)")
-                    checkable: true
-                    autoExclusive: true
-                    checked: settings.sortBy === "modified" && settings.sortOrder === Qt.AscendingOrder
-                    onTriggered:
-                    {
-                        settings.sortBy = "modified"
-                        settings.sortOrder = Qt.AscendingOrder
-                    }
-                }
-
-                MenuItem
-                {
-                    text: i18n("Size (Smallest)")
-                    checkable: true
-                    autoExclusive: true
-                    checked: settings.sortBy === "size" && settings.sortOrder === Qt.AscendingOrder
-                    onTriggered:
-                    {
-                        settings.sortBy = "size"
-                        settings.sortOrder = Qt.AscendingOrder
-                    }
-                }
-
-                MenuItem
-                {
-                    text: i18n("Size (Largest)")
-                    checkable: true
-                    autoExclusive: true
-                    checked: settings.sortBy === "size" && settings.sortOrder === Qt.DescendingOrder
-                    onTriggered:
-                    {
-                        settings.sortBy = "size"
-                        settings.sortOrder = Qt.DescendingOrder
-                    }
-                }
-
-                MenuItem
-                {
-                    text: i18n("Type (A-Z)")
-                    checkable: true
-                    autoExclusive: true
-                    checked: settings.sortBy === "type" && settings.sortOrder === Qt.AscendingOrder
-                    onTriggered:
-                    {
-                        settings.sortBy = "type"
-                        settings.sortOrder = Qt.AscendingOrder
-                    }
-                }
-            },
-
-            ToolSeparator
-            {
-                visible: browserSortVisible || tagsGridActive
-                bottomPadding: 10
-                topPadding: 10
-            },
-
             Maui.ToolButtonMenu
             {
                 icon.name: "configure"
@@ -576,9 +391,9 @@ Maui.ApplicationWindow
             anchors.topMargin: _shellPage.headBar.height + Maui.Style.space.small
             background: null
             Maui.Theme.colorSet: Maui.Theme.View
-            sideBar.preferredWidth: Math.min(root.width * (root.height > root.width ? 0.82 : 0.3), Maui.Style.units.gridUnit * 18)
-            sideBar.minimumWidth: Maui.Style.units.gridUnit * 12
-            sideBar.maximumWidth: Maui.Style.units.gridUnit * 24
+            sideBar.preferredWidth: Math.min(root.width * (root.height > root.width ? 0.84 : 0.38), Maui.Style.units.gridUnit * 24)
+            sideBar.minimumWidth: Maui.Style.units.gridUnit * 14
+            sideBar.maximumWidth: Maui.Style.units.gridUnit * 30
             sideBar.collapsed: root.height > root.width || root.width < Maui.Style.units.gridUnit * 42
             sideBar.autoShow: true
             sideBar.autoHide: true
@@ -600,6 +415,14 @@ Maui.ApplicationWindow
                 }
                 clip: true
                 opacity: _workspace.sideBar.position
+                Behavior on opacity
+                {
+                    NumberAnimation
+                    {
+                        duration: 180
+                        easing.type: Easing.InOutQuad
+                    }
+                }
                 layer.enabled: true
                 Maui.Theme.colorSet: Maui.Theme.Window
                 Maui.Theme.inherit: false
@@ -618,11 +441,6 @@ Maui.ApplicationWindow
                         TabButton
                         {
                             text: i18n("Library")
-                        }
-
-                        TabButton
-                        {
-                            text: i18n("Collections")
                         }
 
                         TabButton
@@ -657,12 +475,6 @@ Maui.ApplicationWindow
                         {
                             anchors.fill: parent
                             currentIndex: _libraryTabs.currentIndex
-
-                            CollectionView
-                            {
-                                id: _galleryView
-                                useInternalChrome: false
-                            }
 
                             CollectionsView
                             {
@@ -718,26 +530,216 @@ Maui.ApplicationWindow
                         Layout.fillWidth: true
                     }
 
-                    Maui.SearchField
+                    RowLayout
                     {
-                        id: _toolbarSearchField
                         visible: !playlistActive
-                        enabled: visible
                         Layout.fillWidth: true
                         Layout.margins: Maui.Style.space.small
-                        placeholderText: browserSearchPlaceholder
-                        onTextChanged:
+                        Layout.preferredHeight: _toolbarSearchField.implicitHeight
+                        Layout.maximumHeight: _toolbarSearchField.implicitHeight
+                        spacing: Maui.Style.space.small
+
+                        ToolButton
                         {
-                            if (!playlistActive && currentRoute && currentRoute.search)
-                                currentRoute.search(text)
+                            visible: shellBackVisible
+                            Layout.alignment: Qt.AlignVCenter
+                            icon.name: "go-previous"
+                            onClicked: handleToolbarBack()
                         }
-                        onCleared:
+
+                        ToolSeparator
                         {
-                            if (!playlistActive && currentRoute && currentRoute.clearSearch)
-                                currentRoute.clearSearch()
+                            visible: shellBackVisible
+                            Layout.alignment: Qt.AlignVCenter
+                            bottomPadding: 10
+                            topPadding: 10
                         }
-                        Keys.priority: Keys.AfterItem
-                        Keys.onReturnPressed: event.accepted = true
+
+                        Maui.SearchField
+                        {
+                            id: _toolbarSearchField
+                            enabled: parent.visible
+                            Layout.fillWidth: true
+                            Layout.alignment: Qt.AlignVCenter
+                            placeholderText: browserSearchPlaceholder
+                            onTextChanged:
+                            {
+                                if (!playlistActive && currentRoute && currentRoute.search)
+                                    currentRoute.search(text)
+                            }
+                            onCleared:
+                            {
+                                if (!playlistActive && currentRoute && currentRoute.clearSearch)
+                                    currentRoute.clearSearch()
+                            }
+                            Keys.priority: Keys.AfterItem
+                            Keys.onReturnPressed: event.accepted = true
+                        }
+
+                        ToolSeparator
+                        {
+                            visible: browserSortVisible || tagsGridActive
+                            Layout.alignment: Qt.AlignVCenter
+                            bottomPadding: 10
+                            topPadding: 10
+                        }
+
+                        Maui.ToolButtonMenu
+                        {
+                            visible: tagsGridActive
+                            Layout.alignment: Qt.AlignVCenter
+                            icon.name: "view-sort"
+
+                            MenuItem
+                            {
+                                text: i18n("Name (A-Z)")
+                                checkable: true
+                                autoExclusive: true
+                                checked: currentRoute && typeof currentRoute.currentSortIndex === "function" && currentRoute.currentSortIndex() === 0
+                                onTriggered:
+                                {
+                                    if (currentRoute && currentRoute.applySort)
+                                        currentRoute.applySort(0)
+                                }
+                            }
+
+                            MenuItem
+                            {
+                                text: i18n("Name (Z-A)")
+                                checkable: true
+                                autoExclusive: true
+                                checked: currentRoute && typeof currentRoute.currentSortIndex === "function" && currentRoute.currentSortIndex() === 1
+                                onTriggered:
+                                {
+                                    if (currentRoute && currentRoute.applySort)
+                                        currentRoute.applySort(1)
+                                }
+                            }
+
+                            MenuItem
+                            {
+                                text: i18n("Date (Newest)")
+                                checkable: true
+                                autoExclusive: true
+                                checked: currentRoute && typeof currentRoute.currentSortIndex === "function" && currentRoute.currentSortIndex() === 2
+                                onTriggered:
+                                {
+                                    if (currentRoute && currentRoute.applySort)
+                                        currentRoute.applySort(2)
+                                }
+                            }
+
+                            MenuItem
+                            {
+                                text: i18n("Date (Oldest)")
+                                checkable: true
+                                autoExclusive: true
+                                checked: currentRoute && typeof currentRoute.currentSortIndex === "function" && currentRoute.currentSortIndex() === 3
+                                onTriggered:
+                                {
+                                    if (currentRoute && currentRoute.applySort)
+                                        currentRoute.applySort(3)
+                                }
+                            }
+                        }
+
+                        Maui.ToolButtonMenu
+                        {
+                            visible: browserSortVisible
+                            Layout.alignment: Qt.AlignVCenter
+                            icon.name: "view-sort"
+
+                            MenuItem
+                            {
+                                text: i18n("Title (A-Z)")
+                                checkable: true
+                                autoExclusive: true
+                                checked: settings.sortBy === "label" && settings.sortOrder === Qt.AscendingOrder
+                                onTriggered:
+                                {
+                                    settings.sortBy = "label"
+                                    settings.sortOrder = Qt.AscendingOrder
+                                }
+                            }
+
+                            MenuItem
+                            {
+                                text: i18n("Title (Z-A)")
+                                checkable: true
+                                autoExclusive: true
+                                checked: settings.sortBy === "label" && settings.sortOrder === Qt.DescendingOrder
+                                onTriggered:
+                                {
+                                    settings.sortBy = "label"
+                                    settings.sortOrder = Qt.DescendingOrder
+                                }
+                            }
+
+                            MenuItem
+                            {
+                                text: i18n("Date (Newest)")
+                                checkable: true
+                                autoExclusive: true
+                                checked: settings.sortBy === "modified" && settings.sortOrder === Qt.DescendingOrder
+                                onTriggered:
+                                {
+                                    settings.sortBy = "modified"
+                                    settings.sortOrder = Qt.DescendingOrder
+                                }
+                            }
+
+                            MenuItem
+                            {
+                                text: i18n("Date (Oldest)")
+                                checkable: true
+                                autoExclusive: true
+                                checked: settings.sortBy === "modified" && settings.sortOrder === Qt.AscendingOrder
+                                onTriggered:
+                                {
+                                    settings.sortBy = "modified"
+                                    settings.sortOrder = Qt.AscendingOrder
+                                }
+                            }
+
+                            MenuItem
+                            {
+                                text: i18n("Size (Smallest)")
+                                checkable: true
+                                autoExclusive: true
+                                checked: settings.sortBy === "size" && settings.sortOrder === Qt.AscendingOrder
+                                onTriggered:
+                                {
+                                    settings.sortBy = "size"
+                                    settings.sortOrder = Qt.AscendingOrder
+                                }
+                            }
+
+                            MenuItem
+                            {
+                                text: i18n("Size (Largest)")
+                                checkable: true
+                                autoExclusive: true
+                                checked: settings.sortBy === "size" && settings.sortOrder === Qt.DescendingOrder
+                                onTriggered:
+                                {
+                                    settings.sortBy = "size"
+                                    settings.sortOrder = Qt.DescendingOrder
+                                }
+                            }
+
+                            MenuItem
+                            {
+                                text: i18n("Type (A-Z)")
+                                checkable: true
+                                autoExclusive: true
+                                checked: settings.sortBy === "type" && settings.sortOrder === Qt.AscendingOrder
+                                onTriggered:
+                                {
+                                    settings.sortBy = "type"
+                                    settings.sortOrder = Qt.AscendingOrder
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -1009,26 +1011,25 @@ Maui.ApplicationWindow
 
     function showGallery()
     {
-        resetToolbarSearch()
-        showLibrarySection(0)
+        showCollections()
     }
 
     function showCollections()
     {
         resetToolbarSearch()
-        showLibrarySection(1)
+        showLibrarySection(0)
     }
 
     function showTags()
     {
         resetToolbarSearch()
-        showLibrarySection(2)
+        showLibrarySection(1)
     }
 
     function showQueue()
     {
         resetToolbarSearch()
-        showLibrarySection(3)
+        showLibrarySection(2)
     }
 
     function openFolder(url, filters)
