@@ -287,19 +287,6 @@ Maui.ApplicationWindow
         ]
 
         headBar.rightContent: [
-            FB.FavButton
-            {
-                visible: viewerActive
-                url: _playerView.source
-            },
-
-            ToolSeparator
-            {
-                visible: viewerActive
-                bottomPadding: 10
-                topPadding: 10
-            },
-
             Maui.ToolButtonMenu
             {
                 visible: browserSortVisible
@@ -406,50 +393,50 @@ Maui.ApplicationWindow
 
             Maui.ToolButtonMenu
             {
-                icon.name: "overflow-menu"
+                visible: viewerActive
+                icon.name: "configure"
 
                 MenuItem
                 {
-                    visible: viewerActive
-                    text: i18n("Open File")
-                    icon.name: "folder-open"
-                    onTriggered: root.openFileDialog()
-                }
-
-                MenuItem
-                {
-                    visible: viewerActive && Clip.Clip.mpvAvailable
-                    text: i18n("Open URL")
-                    icon.name: "filename-space-amarok"
-                    onTriggered: _openUrlDialog.open()
-                }
-
-                MenuItem
-                {
-                    visible: viewerActive
                     text: root.visibility === Window.FullScreen ? i18n("Exit Full Screen") : i18n("Full Screen")
                     icon.name: root.visibility === Window.FullScreen ? "view-restore" : "view-fullscreen"
-                    onTriggered: root.visibility === Window.FullScreen ? root.showNormal() : root.showFullScreen()
+                    onTriggered: root.toggleFullScreen()
+                }
+
+                MenuSeparator {}
+
+                MenuItem
+                {
+                    text: i18n("Fit to Screen")
+                    checkable: true
+                    autoExclusive: true
+                    checked: player.fillMode === VideoOutput.PreserveAspectFit
+                    onTriggered: player.fillMode = VideoOutput.PreserveAspectFit
                 }
 
                 MenuItem
                 {
-                    visible: viewerActive && Clip.Clip.mpvAvailable
-                    text: i18n("Subtitles")
-                    onTriggered: _subtitlesDialog.open()
+                    text: i18n("Crop to Screen")
+                    checkable: true
+                    autoExclusive: true
+                    checked: player.fillMode === VideoOutput.PreserveAspectCrop
+                    onTriggered: player.fillMode = VideoOutput.PreserveAspectCrop
                 }
 
                 MenuItem
                 {
-                    visible: viewerActive && Clip.Clip.mpvAvailable
-                    text: i18n("Audio")
-                    onTriggered: _audioTracksDialog.open()
+                    text: i18n("Stretch to Screen")
+                    checkable: true
+                    autoExclusive: true
+                    checked: player.fillMode === VideoOutput.Stretch
+                    onTriggered: player.fillMode = VideoOutput.Stretch
                 }
+            },
 
-                MenuSeparator
-                {
-                    visible: viewerActive
-                }
+            Maui.ToolButtonMenu
+            {
+                visible: !viewerActive
+                icon.name: "overflow-menu"
 
                 MenuItem
                 {
@@ -615,20 +602,6 @@ Maui.ApplicationWindow
                         Label
                         {
                             text: Maui.Handy.formatTime(player.duration / 1000) + " / " + Maui.Handy.formatTime(player.position / 1000)
-                        },
-
-                        ToolButton
-                        {
-                            icon.name: "zoom-fit-width"
-                            checkable: true
-                            checked: player.fillMode == VideoOutput.PreserveAspectFit
-                            onClicked:
-                            {
-                                if (!checked)
-                                    player.fillMode = VideoOutput.PreserveAspectCrop
-                                else
-                                    player.fillMode = VideoOutput.PreserveAspectFit
-                            }
                         }
                     ]
 
@@ -765,6 +738,14 @@ Maui.ApplicationWindow
         }
 
         _stackView.currentItem.forceActiveFocus()
+    }
+
+    function toggleFullScreen()
+    {
+        if (root.visibility === Window.FullScreen)
+            root.showNormal()
+        else
+            root.showFullScreen()
     }
 
     function playNext()

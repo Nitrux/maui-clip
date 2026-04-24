@@ -383,7 +383,7 @@ Maui.AltBrowser
                         source: model.url
                         muted: true
                         fillMode: VideoOutput.PreserveAspectFit
-                        playbackRate: 5.0
+                        playbackRate: 1.0
                         loops: 3
                     }
                 }

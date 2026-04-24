@@ -4,6 +4,7 @@
 #include <QQmlContext>
 #include <QFileInfo>
 #include <QIcon>
+#include <QDate>
 
 #include <QQmlApplicationEngine>
 
@@ -112,17 +113,17 @@ Q_DECL_EXPORT int main(int argc, char *argv[])
 
     KLocalizedString::setApplicationDomain("clip");
     KAboutData about(QStringLiteral("clip"),
-                     QStringLiteral("Clip"),
+                     i18n("Clip"),
                      CLIP_VERSION_STRING,
                      i18n("Browse and play your videos."),
                      KAboutLicense::LGPL_V3,
-                     APP_COPYRIGHT_NOTICE,
+                     i18n("© %1 Made by Nitrux | Built with MauiKit", QString::number(QDate::currentDate().year())),
                      QString(GIT_BRANCH) + "/" + QString(GIT_COMMIT_HASH));
 
     about.addAuthor(QStringLiteral("Camilo Higuita"), i18n("Developer"), QStringLiteral("milo.h@aol.com"));
-    about.setHomepage("https://mauikit.org");
-    about.setProductName("maui/clip");
-    about.setBugAddress("https://invent.kde.org/maui/clip/-/issues");
+    about.addAuthor(QStringLiteral("Uri Herrera"), i18n("Developer"), QStringLiteral("uri_herrera@nxos.org"));
+    about.setHomepage("https://nxos.org");
+    about.setProductName("nitrux/clip");
     about.setOrganizationDomain(CLIP_URI);
     about.setDesktopFileName("org.maui.clip");
     about.setProgramLogo(app.windowIcon());
@@ -131,8 +132,6 @@ Q_DECL_EXPORT int main(int argc, char *argv[])
     about.addComponent(FBData.name(), MauiKitFileBrowsing::buildVersion(), FBData.version(), FBData.webAddress());
 
 //    about.addComponent("FFmpeg", "", QString::fromLatin1(av_version_info()), QString::fromLatin1(avutil_license()));
-
-    about.addComponent("MPV");
 
 #ifdef CLIP_BUILD_BUNDLED_PREVIEW_PROVIDER
     about.addComponent("TagLib",

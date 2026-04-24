@@ -16,20 +16,7 @@ BrowserLayout
 
     holder.emoji: "folder-videos"
     holder.title: i18n("No Videos!")
-    holder.body: i18n("Nothing here. You can add new sources or open a video.")
-    holder.actions: [
-        Action
-        {
-            text: i18n("Open File")
-            onTriggered: openFileDialog()
-        },
-
-        Action
-        {
-            text: i18n("Add Source")
-            onTriggered: openSettingsDialog()
-        }
-    ]
+    holder.body: i18n("Nothing here.")
 
     onItemClicked: play(item)
 }
