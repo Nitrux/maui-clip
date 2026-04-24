@@ -352,7 +352,6 @@ Maui.Page
             gridView.header: Loader
             {
                 width: _folderBrowser.width
-                asynchronous: true
                 sourceComponent: Column
                 {
                     spacing: Maui.Style.space.medium
@@ -417,7 +416,7 @@ Maui.Page
     function search(text)
     {
         if (browsingFolder) {
-            if (currentBrowser)
+            if (currentBrowser && currentBrowser.listModel)
                 currentBrowser.listModel.filter = text
         } else {
             rebuildSourcesModel(text)
@@ -427,8 +426,8 @@ Maui.Page
     function clearSearch()
     {
         if (browsingFolder) {
-            if (currentBrowser)
-                currentBrowser.listModel.clearFilters()
+            if (currentBrowser && currentBrowser.listModel)
+                currentBrowser.listModel.filter = ""
         } else {
             rebuildSourcesModel("")
         }

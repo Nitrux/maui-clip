@@ -27,6 +27,7 @@ Maui.ApplicationWindow
 
     property bool selectionMode: false
     property int lastAudibleVolume: 100
+    property bool suppressToolbarSearchCallbacks: false
 
     readonly property alias player: _playerView
     readonly property alias selectionBar: _selectionBar
@@ -36,9 +37,9 @@ Maui.ApplicationWindow
     readonly property bool collectionsActive: _libraryTabs.currentIndex === 0
     readonly property bool tagsActive: _libraryTabs.currentIndex === 1
     readonly property bool playlistActive: _libraryTabs.currentIndex === 2
-    readonly property bool collectionsFolderActive: collectionsActive && currentRoute && currentRoute.browsingFolder
-    readonly property bool tagsFilterActive: tagsActive && currentRoute && currentRoute.filteringTag
-    readonly property bool tagsGridActive: tagsActive && currentRoute && !currentRoute.filteringTag
+    readonly property bool collectionsFolderActive: !!(collectionsActive && currentRoute && currentRoute.browsingFolder)
+    readonly property bool tagsFilterActive: !!(tagsActive && currentRoute && currentRoute.filteringTag)
+    readonly property bool tagsGridActive: !!(tagsActive && currentRoute && !currentRoute.filteringTag)
     readonly property bool browserSearchVisible: collectionsActive || tagsFilterActive
     readonly property bool browserSortVisible: collectionsFolderActive
     readonly property bool shellBackVisible: collectionsFolderActive || tagsFilterActive
@@ -300,7 +301,10 @@ Maui.ApplicationWindow
 
         Item
         {
-            anchors.fill: _shellPage.headBar
+            anchors.top: parent.top
+            anchors.left: parent.left
+            anchors.right: parent.right
+            height: _shellPage.headBar.height
             z: 999
             enabled: false
             visible: _shellPage.headBar.visible && !!_playerView.currentVideo.label
@@ -461,7 +465,7 @@ Maui.ApplicationWindow
                                 _workspace.sideBar.open()
 
                             if (currentRoute && currentRoute.forceActiveFocus)
-                                currentRoute.forceActiveFocus()
+                                Qt.callLater(() => currentRoute.forceActiveFocus())
                         }
                     }
 
@@ -471,55 +475,55 @@ Maui.ApplicationWindow
                         Layout.fillHeight: true
                         clip: true
 
-                        StackLayout
+                        CollectionsView
+                        {
+                            id: _collectionsView
+                            anchors.fill: parent
+                            visible: _libraryTabs.currentIndex === 0
+                            useInternalChrome: false
+                        }
+
+                        TagsView
+                        {
+                            id: _tagsView
+                            anchors.fill: parent
+                            visible: _libraryTabs.currentIndex === 1
+                            useInternalChrome: false
+                        }
+
+                        ColumnLayout
                         {
                             anchors.fill: parent
-                            currentIndex: _libraryTabs.currentIndex
+                            visible: _libraryTabs.currentIndex === 2
+                            spacing: 0
 
-                            CollectionsView
+                            RowLayout
                             {
-                                id: _collectionsView
-                                useInternalChrome: false
-                            }
+                                Layout.fillWidth: true
+                                Layout.leftMargin: Maui.Style.space.small
+                                Layout.rightMargin: Maui.Style.space.small
+                                Layout.topMargin: Maui.Style.space.small
 
-                            TagsView
-                            {
-                                id: _tagsView
-                                useInternalChrome: false
-                            }
-
-                            ColumnLayout
-                            {
-                                spacing: 0
-
-                                RowLayout
+                                Item
                                 {
                                     Layout.fillWidth: true
-                                    Layout.leftMargin: Maui.Style.space.small
-                                    Layout.rightMargin: Maui.Style.space.small
-                                    Layout.topMargin: Maui.Style.space.small
-
-                                    Item
-                                    {
-                                        Layout.fillWidth: true
-                                    }
-
-                                    ToolButton
-                                    {
-                                        visible: _playlist.list.count > 0
-                                        icon.name: "edit-clear"
-                                        text: i18n("Clear")
-                                        display: AbstractButton.TextBesideIcon
-                                        onClicked: clearQueue()
-                                    }
                                 }
 
-                                Playlist
+                                ToolButton
                                 {
-                                    id: _playlist
-                                    Layout.fillWidth: true
-                                    Layout.fillHeight: true
+                                    visible: _playlist.list.count > 0
+                                    icon.name: "edit-clear"
+                                    text: i18n("Clear")
+                                    display: AbstractButton.TextBesideIcon
+                                    onClicked: clearQueue()
                                 }
+                            }
+
+                            Playlist
+                            {
+                                id: _playlist
+                                Layout.fillWidth: true
+                                Layout.fillHeight: true
                             }
                         }
                     }
@@ -564,12 +568,12 @@ Maui.ApplicationWindow
                             placeholderText: browserSearchPlaceholder
                             onTextChanged:
                             {
-                                if (!playlistActive && currentRoute && currentRoute.search)
+                                if (!suppressToolbarSearchCallbacks && !playlistActive && currentRoute && currentRoute.search)
                                     currentRoute.search(text)
                             }
                             onCleared:
                             {
-                                if (!playlistActive && currentRoute && currentRoute.clearSearch)
+                                if (!suppressToolbarSearchCallbacks && !playlistActive && currentRoute && currentRoute.clearSearch)
                                     currentRoute.clearSearch()
                             }
                             Keys.priority: Keys.AfterItem
@@ -985,7 +989,9 @@ Maui.ApplicationWindow
 
     function resetToolbarSearch()
     {
+        suppressToolbarSearchCallbacks = true
         _toolbarSearchField.text = ""
+        suppressToolbarSearchCallbacks = false
     }
 
     function handleToolbarBack()
@@ -999,14 +1005,23 @@ Maui.ApplicationWindow
 
     function showLibrarySection(index)
     {
+        const previousRoute = currentRoute
+        const hadSearchText = _toolbarSearchField.text.length > 0
+
+        if (hadSearchText && previousRoute && previousRoute.clearSearch)
+            previousRoute.clearSearch()
+
         if (_libraryTabs.currentIndex !== index)
             _libraryTabs.currentIndex = index
+
+        if (hadSearchText)
+            resetToolbarSearch()
 
         if (_workspace.sideBar.position === 0)
             _workspace.sideBar.open()
 
         if (currentRoute && currentRoute.forceActiveFocus)
-            currentRoute.forceActiveFocus()
+            Qt.callLater(() => currentRoute.forceActiveFocus())
     }
 
     function showGallery()

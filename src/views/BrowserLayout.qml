@@ -503,6 +503,6 @@ Maui.AltBrowser
 
     function clearSearch()
     {
-        _collectionModel.clearFilters()
+        _collectionModel.filter = ""
     }
 }
