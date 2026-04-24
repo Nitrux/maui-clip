@@ -52,6 +52,7 @@ qt_add_qml_module(${PROJECT_NAME} URI app.maui.clip
     views/BrowserLayout.qml
     views/ItemMenu.qml
     views/ListDelegate.qml
+    views/SelectionBar.qml
     views/settings/SettingsDialog.qml
     views/player/Player.qml)
 

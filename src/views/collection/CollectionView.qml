@@ -11,6 +11,7 @@ BrowserLayout
     objectName: "GalleryView"
 
     background: null
+    allowLassoSelection: false
     Maui.Controls.showCSD: true
     headerMargins: Maui.Style.contentMargins
 

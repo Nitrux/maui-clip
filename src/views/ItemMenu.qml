@@ -19,17 +19,25 @@ Maui.ContextualMenu
             if(Maui.Handy.isMobile)
                 root.selectionMode = true
 
-            selectionBar.insert(model.get(index))
+            const item = model ? model.get(index) : null
+
+            if (selectionBar && item && item.url)
+                selectionBar.append(item.url, item)
         }
     }
 
     MenuItem
     {
-        text: i18nc("@action:inmenu", "Show in Folder")
-        icon.name: "folder-open"
+        text: i18nc("@action:inmenu", "Copy Path to Clipboard")
+        icon.name: "edit-copy"
         onTriggered:
         {
-            //            Pix.Collection.showInFolder([control.model.get(index).url])
+            const item = model ? model.get(index) : null
+            const path = item ? String(item.path || item.url || "") : ""
+
+            if (path.length > 0)
+                Maui.Handy.copyTextToClipboard(path)
+
             close()
         }
     }

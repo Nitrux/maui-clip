@@ -26,24 +26,38 @@ Maui.ApplicationWindow
     background: null
 
     property bool selectionMode: false
+    property int lastAudibleVolume: 100
 
     readonly property alias player: _playerView
-    readonly property var currentRoute: _stackView.currentItem
-    readonly property bool viewerActive: _sideBarView.active
-    readonly property bool galleryActive: !viewerActive && currentRoute && currentRoute.objectName === "GalleryView"
-    readonly property bool collectionsActive: !viewerActive && currentRoute && currentRoute.objectName === "CollectionView"
-    readonly property bool tagsActive: !viewerActive && currentRoute && currentRoute.objectName === "TagsView"
+    readonly property alias selectionBar: _selectionBar
+    readonly property var currentRoute: _libraryTabs.currentIndex === 0 ? _galleryView
+                                      : (_libraryTabs.currentIndex === 1 ? _collectionsView
+                                         : (_libraryTabs.currentIndex === 2 ? _tagsView
+                                            : _playlist))
+    readonly property bool galleryActive: _libraryTabs.currentIndex === 0
+    readonly property bool collectionsActive: _libraryTabs.currentIndex === 1
+    readonly property bool tagsActive: _libraryTabs.currentIndex === 2
+    readonly property bool playlistActive: _libraryTabs.currentIndex === 3
     readonly property bool collectionsFolderActive: collectionsActive && currentRoute && currentRoute.browsingFolder
     readonly property bool tagsFilterActive: tagsActive && currentRoute && currentRoute.filteringTag
     readonly property bool tagsGridActive: tagsActive && currentRoute && !currentRoute.filteringTag
     readonly property bool browserSearchVisible: galleryActive || collectionsActive || tagsFilterActive
     readonly property bool browserSortVisible: galleryActive || collectionsFolderActive
-    readonly property bool shellBackVisible: viewerActive || collectionsFolderActive || tagsFilterActive
-    readonly property string browserSearchPlaceholder: tagsFilterActive
-                                                     ? i18n("Search videos")
-                                                     : (collectionsActive
-                                                        ? (collectionsFolderActive ? i18n("Search videos") : i18n("Search collections"))
-                                                        : i18n("Search videos"))
+    readonly property bool shellBackVisible: collectionsFolderActive || tagsFilterActive
+    readonly property bool fullScreenPlaybackChromeAutoHide: settings.hidePlayerChromeInFullScreen
+                                                             && root.visibility === Window.FullScreen
+                                                             && !!_playerView.currentVideo.url
+    readonly property bool fullScreenPlaybackChromeVisible: !fullScreenPlaybackChromeAutoHide
+                                                            || _fullScreenTopRevealArea.containsMouse
+                                                            || _fullScreenBottomRevealArea.containsMouse
+    property real fullScreenPlaybackChromeOpacity: fullScreenPlaybackChromeVisible ? 1 : 0
+    readonly property string browserSearchPlaceholder: tagsGridActive
+                                                     ? i18n("Search tags")
+                                                     : (tagsFilterActive
+                                                        ? i18n("Search videos")
+                                                        : (collectionsActive
+                                                           ? (collectionsFolderActive ? i18n("Search videos") : i18n("Search collections"))
+                                                           : i18n("Search videos")))
 
     Maui.WindowBlur
     {
@@ -63,15 +77,51 @@ Maui.ApplicationWindow
         border.width: 1
     }
 
+    Behavior on fullScreenPlaybackChromeOpacity
+    {
+        NumberAnimation
+        {
+            duration: 180
+            easing.type: Easing.InOutQuad
+        }
+    }
+
+    MouseArea
+    {
+        id: _fullScreenTopRevealArea
+        anchors.top: parent.top
+        anchors.left: parent.left
+        anchors.right: parent.right
+        height: Math.max(Maui.Style.units.gridUnit * 4, _shellPage.headBar.height + Maui.Style.space.big)
+        acceptedButtons: Qt.NoButton
+        hoverEnabled: true
+        enabled: fullScreenPlaybackChromeAutoHide
+        visible: enabled
+        z: 1200
+    }
+
+    MouseArea
+    {
+        id: _fullScreenBottomRevealArea
+        anchors.bottom: parent.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        height: Math.max(Maui.Style.units.gridUnit * 4, _playerPage.footBar.height + Maui.Style.space.big)
+        acceptedButtons: Qt.NoButton
+        hoverEnabled: true
+        enabled: fullScreenPlaybackChromeAutoHide
+        visible: enabled
+        z: 1200
+    }
+
     Settings
     {
         id: settings
-        property int volumeStep: 5
         property string colorScheme: "Breeze"
         property string sortBy: "modified"
         property int sortOrder: Qt.DescendingOrder
         property bool hardwareDecoding: true
-        property string preferredLanguage: "eng"
+        property bool hidePlayerChromeInFullScreen: false
         property string subtitlesPath
         property font font
         property bool playerTagBar: true
@@ -169,12 +219,61 @@ Maui.ApplicationWindow
         }
     }
 
-    Playlist
+    Shortcut
     {
-        id: _playlist
-        visible: false
-        width: 0
-        height: 0
+        sequence: "Ctrl+O"
+        context: Qt.WindowShortcut
+        onActivated: openFileDialog()
+    }
+
+    Shortcut
+    {
+        sequence: "Ctrl+Shift+O"
+        context: Qt.WindowShortcut
+        onActivated: openUrlDialog()
+    }
+
+    Shortcut
+    {
+        sequence: "Ctrl+1"
+        context: Qt.WindowShortcut
+        onActivated: showGallery()
+    }
+
+    Shortcut
+    {
+        sequence: "Ctrl+2"
+        context: Qt.WindowShortcut
+        onActivated: showCollections()
+    }
+
+    Shortcut
+    {
+        sequence: "Ctrl+3"
+        context: Qt.WindowShortcut
+        onActivated: showTags()
+    }
+
+    Shortcut
+    {
+        sequence: "Ctrl+4"
+        context: Qt.WindowShortcut
+        onActivated: showQueue()
+    }
+
+    Shortcut
+    {
+        sequence: "F11"
+        context: Qt.WindowShortcut
+        onActivated: toggleFullScreen()
+    }
+
+    Shortcut
+    {
+        sequence: "Escape"
+        context: Qt.WindowShortcut
+        enabled: root.visibility === Window.FullScreen
+        onActivated: root.showNormal()
     }
 
     Maui.Page
@@ -182,111 +281,124 @@ Maui.ApplicationWindow
         id: _shellPage
         anchors.fill: parent
         background: null
-        autoHideHeader: viewerActive && _playerView.playbackState === MediaPlayer.PlayingState
-        altHeader: viewerActive && Maui.Handy.isMobile
+        autoHideHeader: false
+        altHeader: Maui.Handy.isMobile
         headerMargins: Maui.Style.contentMargins
-        floatingHeader: viewerActive
-        headBar.visible: !viewerActive || !_playerHolderLoader.active
+        floatingHeader: true
+        headBar.visible: !fullScreenPlaybackChromeAutoHide || fullScreenPlaybackChromeOpacity > 0.01
+        headBar.enabled: fullScreenPlaybackChromeOpacity > 0.01
+        headBar.opacity: fullScreenPlaybackChromeOpacity
+        headBar.forceCenterMiddleContent: true
 
         Maui.Controls.showCSD: true
 
         headBar.leftContent: [
             ToolButton
             {
+                icon.name: (_workspace.sideBar.visible && _workspace.sideBar.position > 0) ? "sidebar-collapse" : "sidebar-expand"
+                onClicked: _workspace.sideBar.toggle()
+                checked: _workspace.sideBar.visible && _workspace.sideBar.position > 0
+                ToolTip.delay: 1000
+                ToolTip.timeout: 5000
+                ToolTip.visible: hovered
+                ToolTip.text: i18n("Toggle sidebar")
+            },
+
+            ToolSeparator
+            {
+                visible: shellBackVisible
+                bottomPadding: 10
+                topPadding: 10
+            },
+
+            ToolButton
+            {
                 visible: shellBackVisible
                 icon.name: "go-previous"
                 onClicked: handleToolbarBack()
-            },
-
-            ToolSeparator
-            {
-                visible: shellBackVisible
-                bottomPadding: 10
-                topPadding: 10
-            },
-
-            ToolButton
-            {
-                icon.name: "folder-videos"
-                onClicked: showGallery()
-            },
-
-            ToolButton
-            {
-                icon.name: "folder"
-                onClicked: showCollections()
-            },
-
-            ToolButton
-            {
-                icon.name: "tag"
-                onClicked: showTags()
-            },
-
-            ToolSeparator
-            {
-                visible: browserSearchVisible || tagsGridActive
-                bottomPadding: 10
-                topPadding: 10
-            },
-
-            Maui.SearchField
-            {
-                id: _toolbarSearchField
-                visible: browserSearchVisible
-                enabled: visible
-                implicitWidth: 250
-                placeholderText: browserSearchPlaceholder
-                onTextChanged:
-                {
-                    if (browserSearchVisible && currentRoute && currentRoute.search)
-                        currentRoute.search(text)
-                }
-                onCleared:
-                {
-                    if (browserSearchVisible && currentRoute && currentRoute.clearSearch)
-                        currentRoute.clearSearch()
-                }
-                Keys.priority: Keys.AfterItem
-                Keys.onReturnPressed: event.accepted = true
-            },
-
-            Label
-            {
-                visible: tagsGridActive
-                text: i18n("Sort")
-                font.weight: Font.DemiBold
-                verticalAlignment: Text.AlignVCenter
-            },
-
-            ComboBox
-            {
-                id: _tagsSortComboBox
-                visible: tagsGridActive
-                implicitWidth: 180
-                model: [
-                    i18n("Name (A-Z)"),
-                    i18n("Name (Z-A)"),
-                    i18n("Date (Newest)"),
-                    i18n("Date (Oldest)")
-                ]
-
-                Binding on currentIndex
-                {
-                    when: tagsGridActive && currentRoute && currentRoute.currentSortIndex
-                    value: currentRoute.currentSortIndex()
-                    restoreMode: Binding.RestoreBinding
-                }
-
-                onActivated: (index) =>
-                {
-                    if (tagsGridActive && currentRoute && currentRoute.applySort)
-                        currentRoute.applySort(index)
-                }
             }
         ]
 
+        headBar.middleContent: []
+
+        Item
+        {
+            anchors.fill: _shellPage.headBar
+            z: 999
+            enabled: false
+            visible: _shellPage.headBar.visible && !!_playerView.currentVideo.label
+
+            Label
+            {
+                anchors.centerIn: parent
+                width: Math.max(0, parent.width - (Maui.Style.units.gridUnit * 16))
+                text: _playerView.currentVideo.label || ""
+                horizontalAlignment: Text.AlignHCenter
+                verticalAlignment: Text.AlignVCenter
+                elide: Text.ElideMiddle
+                maximumLineCount: 1
+            }
+        }
+
         headBar.rightContent: [
+            Maui.ToolButtonMenu
+            {
+                visible: tagsGridActive
+                icon.name: "view-sort"
+
+                MenuItem
+                {
+                    text: i18n("Name (A-Z)")
+                    checkable: true
+                    autoExclusive: true
+                    checked: currentRoute && typeof currentRoute.currentSortIndex === "function" && currentRoute.currentSortIndex() === 0
+                    onTriggered:
+                    {
+                        if (currentRoute && currentRoute.applySort)
+                            currentRoute.applySort(0)
+                    }
+                }
+
+                MenuItem
+                {
+                    text: i18n("Name (Z-A)")
+                    checkable: true
+                    autoExclusive: true
+                    checked: currentRoute && typeof currentRoute.currentSortIndex === "function" && currentRoute.currentSortIndex() === 1
+                    onTriggered:
+                    {
+                        if (currentRoute && currentRoute.applySort)
+                            currentRoute.applySort(1)
+                    }
+                }
+
+                MenuItem
+                {
+                    text: i18n("Date (Newest)")
+                    checkable: true
+                    autoExclusive: true
+                    checked: currentRoute && typeof currentRoute.currentSortIndex === "function" && currentRoute.currentSortIndex() === 2
+                    onTriggered:
+                    {
+                        if (currentRoute && currentRoute.applySort)
+                            currentRoute.applySort(2)
+                    }
+                }
+
+                MenuItem
+                {
+                    text: i18n("Date (Oldest)")
+                    checkable: true
+                    autoExclusive: true
+                    checked: currentRoute && typeof currentRoute.currentSortIndex === "function" && currentRoute.currentSortIndex() === 3
+                    onTriggered:
+                    {
+                        if (currentRoute && currentRoute.applySort)
+                            currentRoute.applySort(3)
+                    }
+                }
+            },
+
             Maui.ToolButtonMenu
             {
                 visible: browserSortVisible
@@ -386,14 +498,13 @@ Maui.ApplicationWindow
 
             ToolSeparator
             {
-                visible: browserSortVisible
+                visible: browserSortVisible || tagsGridActive
                 bottomPadding: 10
                 topPadding: 10
             },
 
             Maui.ToolButtonMenu
             {
-                visible: viewerActive
                 icon.name: "configure"
 
                 MenuItem
@@ -433,11 +544,15 @@ Maui.ApplicationWindow
                 }
             },
 
+            ToolSeparator
+            {
+                bottomPadding: 10
+                topPadding: 10
+            },
+
             Maui.ToolButtonMenu
             {
-                visible: !viewerActive
                 icon.name: "overflow-menu"
-
                 MenuItem
                 {
                     text: i18n("Settings")
@@ -454,180 +569,383 @@ Maui.ApplicationWindow
             }
         ]
 
-        StackView
+        Maui.SideBarView
         {
-            id: _stackView
+            id: _workspace
             anchors.fill: parent
+            anchors.topMargin: _shellPage.headBar.height + Maui.Style.space.small
             background: null
-            initialItem: _galleryViewComponent
             Maui.Theme.colorSet: Maui.Theme.View
+            sideBar.preferredWidth: Math.min(root.width * (root.height > root.width ? 0.82 : 0.3), Maui.Style.units.gridUnit * 18)
+            sideBar.minimumWidth: Maui.Style.units.gridUnit * 12
+            sideBar.maximumWidth: Maui.Style.units.gridUnit * 24
+            sideBar.collapsed: root.height > root.width || root.width < Maui.Style.units.gridUnit * 42
+            sideBar.autoShow: true
+            sideBar.autoHide: true
+            sideBar.floats: sideBar.collapsed
 
-            onCurrentItemChanged: resetToolbarSearch()
-
-            Component
+            sideBarContent: Maui.Page
             {
-                id: _galleryViewComponent
-                CollectionView
+                id: _libraryPanel
+                readonly property int panelMargin: Maui.Handy.isMobile ? Maui.Style.space.medium : Maui.Style.contentMargins
+                anchors.fill: parent
+                anchors.margins: panelMargin
+                background: Rectangle
                 {
-                    useInternalChrome: false
+                    clip: true
+                    color: Maui.Theme.alternateBackgroundColor
+                    radius: Maui.Style.radiusV
+                    border.color: Maui.Theme.backgroundColor
+                    border.width: 1
                 }
-            }
+                clip: true
+                opacity: _workspace.sideBar.position
+                layer.enabled: true
+                Maui.Theme.colorSet: Maui.Theme.Window
+                Maui.Theme.inherit: false
 
-            Component
-            {
-                id: _collectionsViewComponent
-                CollectionsView
+                ColumnLayout
                 {
-                    useInternalChrome: false
-                }
-            }
-
-            Component
-            {
-                id: _tagsViewComponent
-                TagsView
-                {
-                    useInternalChrome: false
-                }
-            }
-
-            Maui.SideBarView
-            {
-                id: _sideBarView
-                focus: true
-                visible: StackView.status !== StackView.Inactive
-                readonly property bool active: StackView.status === StackView.Active
-
-                sideBar.enabled: false
-                background: null
-
-                Maui.Page
-                {
-                    id: _playerPage
                     anchors.fill: parent
-                    background: null
-                    headBar.visible: false
+                    spacing: 0
 
-                    Maui.Controls.showCSD: true
-
-                    Keys.enabled: !Maui.Handy.isMobile
-                    Keys.onSpacePressed: player.playbackState === MediaPlayer.PlayingState ? player.pause() : player.play()
-                    Keys.onLeftPressed: player.seek(player.position - 500)
-                    Keys.onRightPressed: player.seek(player.position + 500)
-
-                    PlayerView
+                    TabBar
                     {
-                        id: _playerView
-                        anchors.fill: parent
-                    }
-
-                    Loader
-                    {
-                        anchors.fill: parent
-                        asynchronous: true
-
-                        sourceComponent: RowLayout
-                        {
-                            MouseArea
-                            {
-                                Layout.fillWidth: true
-                                Layout.fillHeight: true
-                                onDoubleClicked: player.seek(player.position - 5)
-                            }
-
-                            MouseArea
-                            {
-                                Layout.fillWidth: true
-                                Layout.fillHeight: true
-                                onClicked: player.playbackState === MediaPlayer.PlayingState ? player.pause() : player.play()
-                                onDoubleClicked: root.toggleFullScreen()
-                            }
-
-                            MouseArea
-                            {
-                                Layout.fillWidth: true
-                                Layout.fillHeight: true
-                                onDoubleClicked: player.seek(player.position + 5)
-                            }
-                        }
-                    }
-
-                    Loader
-                    {
-                        id: _playerHolderLoader
-                        anchors.fill: parent
-                        active: _playerView.isStopped && _playerView.error !== MediaPlayer.NoError
-                        asynchronous: true
-                        visible: active
-                        sourceComponent: Maui.Holder
-                        {
-                            emoji: "media-playback-start"
-                            title: i18n("Nothing Here!")
-                            body: _playerView.error !== MediaPlayer.NoError ? _playerView.errorString : i18n("Open a new video from your collection or file system.")
-                            actions: [
-                                Action
-                                {
-                                    text: i18n("Open")
-                                    onTriggered: root.openFileDialog()
-                                },
-
-                                Action
-                                {
-                                    text: i18n("Collection")
-                                    onTriggered: showGallery()
-                                }
-                            ]
-                        }
-                    }
-
-                    floatingFooter: true
-                    footerMargins: Maui.Style.contentMargins
-
-                    footBar.middleContent: Slider
-                    {
-                        id: _slider
+                        id: _libraryTabs
                         Layout.fillWidth: true
-                        padding: 0
-                        orientation: Qt.Horizontal
-                        from: 0
-                        to: player.duration
-                        value: player.position
-                        Layout.preferredHeight: 22
-                        onMoved: player.seek(_slider.value)
-                        spacing: 0
-                        focus: true
+                        z: 2
+
+                        TabButton
+                        {
+                            text: i18n("Library")
+                        }
+
+                        TabButton
+                        {
+                            text: i18n("Collections")
+                        }
+
+                        TabButton
+                        {
+                            text: i18n("Tags")
+                        }
+
+                        TabButton
+                        {
+                            text: i18n("Playlist")
+                        }
+
+                        onCurrentIndexChanged:
+                        {
+                            resetToolbarSearch()
+
+                            if (_workspace.sideBar.position === 0)
+                                _workspace.sideBar.open()
+
+                            if (currentRoute && currentRoute.forceActiveFocus)
+                                currentRoute.forceActiveFocus()
+                        }
                     }
 
-                    footBar.rightContent: [
-                        Label
-                        {
-                            text: Maui.Handy.formatTime(player.duration / 1000) + " / " + Maui.Handy.formatTime(player.position / 1000)
-                        }
-                    ]
-
-                    footBar.leftContent: Maui.ToolActions
+                    Item
                     {
-                        expanded: true
-                        checkable: false
-                        autoExclusive: false
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+                        clip: true
 
-                        Action
+                        StackLayout
                         {
-                            icon.name: "media-skip-backward"
-                            onTriggered: playPrevious()
+                            anchors.fill: parent
+                            currentIndex: _libraryTabs.currentIndex
+
+                            CollectionView
+                            {
+                                id: _galleryView
+                                useInternalChrome: false
+                            }
+
+                            CollectionsView
+                            {
+                                id: _collectionsView
+                                useInternalChrome: false
+                            }
+
+                            TagsView
+                            {
+                                id: _tagsView
+                                useInternalChrome: false
+                            }
+
+                            ColumnLayout
+                            {
+                                spacing: 0
+
+                                RowLayout
+                                {
+                                    Layout.fillWidth: true
+                                    Layout.leftMargin: Maui.Style.space.small
+                                    Layout.rightMargin: Maui.Style.space.small
+                                    Layout.topMargin: Maui.Style.space.small
+
+                                    Item
+                                    {
+                                        Layout.fillWidth: true
+                                    }
+
+                                    ToolButton
+                                    {
+                                        visible: _playlist.list.count > 0
+                                        icon.name: "edit-clear"
+                                        text: i18n("Clear")
+                                        display: AbstractButton.TextBesideIcon
+                                        onClicked: clearQueue()
+                                    }
+                                }
+
+                                Playlist
+                                {
+                                    id: _playlist
+                                    Layout.fillWidth: true
+                                    Layout.fillHeight: true
+                                }
+                            }
+                        }
+                    }
+
+                    ToolSeparator
+                    {
+                        visible: !playlistActive
+                        Layout.fillWidth: true
+                    }
+
+                    Maui.SearchField
+                    {
+                        id: _toolbarSearchField
+                        visible: !playlistActive
+                        enabled: visible
+                        Layout.fillWidth: true
+                        Layout.margins: Maui.Style.space.small
+                        placeholderText: browserSearchPlaceholder
+                        onTextChanged:
+                        {
+                            if (!playlistActive && currentRoute && currentRoute.search)
+                                currentRoute.search(text)
+                        }
+                        onCleared:
+                        {
+                            if (!playlistActive && currentRoute && currentRoute.clearSearch)
+                                currentRoute.clearSearch()
+                        }
+                        Keys.priority: Keys.AfterItem
+                        Keys.onReturnPressed: event.accepted = true
+                    }
+                }
+            }
+
+            SelectionBar
+            {
+                id: _selectionBar
+                anchors.horizontalCenter: parent.horizontalCenter
+                anchors.bottom: parent.bottom
+                anchors.bottomMargin: Maui.Style.space.medium
+                width: Math.min(parent.width - (Maui.Style.space.medium * 2), implicitWidth)
+                maxListHeight: Math.max(0, root.height - _shellPage.headBar.height - (Maui.Style.space.big * 2))
+                z: 1000
+            }
+
+            Maui.Page
+            {
+                id: _playerPage
+                anchors.fill: parent
+                background: null
+                headBar.visible: false
+
+                Maui.Controls.showCSD: true
+
+                Keys.enabled: !Maui.Handy.isMobile
+                Keys.onPressed: (event) =>
+                {
+                    if (event.modifiers & (Qt.ControlModifier | Qt.AltModifier | Qt.MetaModifier))
+                        return
+
+                    switch (event.key) {
+                    case Qt.Key_Space:
+                    case Qt.Key_K:
+                        togglePlayback()
+                        break
+                    case Qt.Key_Left:
+                        seekBy(-5000)
+                        break
+                    case Qt.Key_Right:
+                        seekBy(5000)
+                        break
+                    case Qt.Key_J:
+                        seekBy(-10000)
+                        break
+                    case Qt.Key_L:
+                        seekBy(10000)
+                        break
+                    case Qt.Key_Up:
+                        adjustVolume(5)
+                        break
+                    case Qt.Key_Down:
+                        adjustVolume(-5)
+                        break
+                    case Qt.Key_M:
+                        toggleMute()
+                        break
+                    case Qt.Key_F:
+                        toggleFullScreen()
+                        break
+                    default:
+                        return
+                    }
+
+                    event.accepted = true
+                }
+
+                PlayerView
+                {
+                    id: _playerView
+                    anchors.fill: parent
+                    visible: !_playerHolderLoader.active
+                }
+
+                Loader
+                {
+                    anchors.fill: parent
+                    asynchronous: true
+                    visible: !_playerHolderLoader.active
+
+                    sourceComponent: RowLayout
+                    {
+                        MouseArea
+                        {
+                            Layout.fillWidth: true
+                            Layout.fillHeight: true
+                            onDoubleClicked: player.seek(player.position - 5)
                         }
 
-                        Action
+                        MouseArea
                         {
-                            icon.name: player.isPlaying ? "media-playback-pause" : "media-playback-start"
-                            onTriggered: player.isPaused ? player.play() : player.pause()
+                            Layout.fillWidth: true
+                            Layout.fillHeight: true
+                            onClicked: player.playbackState === MediaPlayer.PlayingState ? player.pause() : player.play()
+                            onDoubleClicked: root.toggleFullScreen()
                         }
 
-                        Action
+                        MouseArea
                         {
-                            icon.name: "media-skip-forward"
-                            onTriggered: playNext()
+                            Layout.fillWidth: true
+                            Layout.fillHeight: true
+                            onDoubleClicked: player.seek(player.position + 5)
                         }
+                    }
+                }
+
+                Loader
+                {
+                    id: _playerHolderLoader
+                    anchors.fill: parent
+                    active: !_playerView.currentVideo.url || (_playerView.isStopped && _playerView.error !== MediaPlayer.NoError)
+                    asynchronous: true
+                    visible: active
+                    sourceComponent: Maui.Holder
+                    {
+                        emoji: "media-playback-start"
+                        title: i18n("Ready to Play")
+                        body: _playerView.error !== MediaPlayer.NoError
+                              ? _playerView.errorString
+                              : i18n("Open a file, add a URL, or choose something from your library to start watching.")
+                    }
+                }
+
+                floatingFooter: true
+                footerMargins: Maui.Style.contentMargins
+                footBar.visible: !fullScreenPlaybackChromeAutoHide || fullScreenPlaybackChromeOpacity > 0.01
+                footBar.enabled: fullScreenPlaybackChromeOpacity > 0.01
+                footBar.opacity: fullScreenPlaybackChromeOpacity
+
+                footBar.middleContent: Slider
+                {
+                    id: _slider
+                    Layout.fillWidth: true
+                    padding: 0
+                    orientation: Qt.Horizontal
+                    from: 0
+                    to: player.duration
+                    value: player.position
+                    Layout.preferredHeight: 22
+                    enabled: !!_playerView.currentVideo.url
+                    onMoved: player.seek(_slider.value)
+                    spacing: 0
+                    focus: true
+                }
+
+                footBar.rightContent: [
+                    Label
+                    {
+                        text: Maui.Handy.formatTime(player.position / 1000) + " / " + Maui.Handy.formatTime(player.duration / 1000)
+                    },
+
+                    ToolButton
+                    {
+                        enabled: _volumeSlider.enabled
+                        text: volumeGlyph(_playerView.playerVolume || 0)
+                        display: AbstractButton.TextOnly
+                        padding: 0
+                        implicitWidth: Maui.Style.iconSizes.medium
+                        implicitHeight: Maui.Style.iconSizes.medium
+                        font.family: "Font Awesome 6 Free Solid"
+                        font.pixelSize: Maui.Style.fontSizes.small
+                        font.weight: Font.Black
+                        onClicked: toggleMute()
+                    },
+
+                    Slider
+                    {
+                        id: _volumeSlider
+                        implicitWidth: Maui.Style.units.gridUnit * 7
+                        from: 0
+                        to: 100
+                        enabled: typeof _playerView.playerVolume === "number"
+                        value: enabled ? _playerView.playerVolume : 100
+                        onMoved: setPlayerVolume(value)
+                    }
+                ]
+
+                footBar.leftContent: Maui.ToolActions
+                {
+                    expanded: true
+                    checkable: false
+                    autoExclusive: false
+
+                    Action
+                    {
+                        icon.name: "media-skip-backward"
+                        enabled: _playlist.list.count > 1
+                        onTriggered: playPrevious()
+                    }
+
+                    Action
+                    {
+                        icon.name: player.isPlaying ? "media-playback-pause" : "media-playback-start"
+                        enabled: !!_playerView.currentVideo.url
+                        onTriggered: player.isPaused ? player.play() : player.pause()
+                    }
+
+                    Action
+                    {
+                        icon.name: "media-playback-stop"
+                        enabled: !!_playerView.currentVideo.url
+                        onTriggered: stopPlayback()
+                    }
+
+                    Action
+                    {
+                        icon.name: "media-skip-forward"
+                        enabled: _playlist.list.count > 1
+                        onTriggered: playNext()
                     }
                 }
             }
@@ -659,7 +977,7 @@ Maui.ApplicationWindow
             for (var url of urls)
                 _playlist.list.appendUrl(url)
 
-            playAt(_playlist.count - urls.length)
+            playAt(_playlist.list.count - urls.length)
         }
     }
 
@@ -670,11 +988,6 @@ Maui.ApplicationWindow
 
     function handleToolbarBack()
     {
-        if (viewerActive) {
-            toggleViewer()
-            return
-        }
-
         if ((collectionsFolderActive || tagsFilterActive) && currentRoute && currentRoute.goBack) {
             resetToolbarSearch()
             currentRoute.goBack()
@@ -682,62 +995,46 @@ Maui.ApplicationWindow
         }
     }
 
+    function showLibrarySection(index)
+    {
+        if (_libraryTabs.currentIndex !== index)
+            _libraryTabs.currentIndex = index
+
+        if (_workspace.sideBar.position === 0)
+            _workspace.sideBar.open()
+
+        if (currentRoute && currentRoute.forceActiveFocus)
+            currentRoute.forceActiveFocus()
+    }
+
     function showGallery()
     {
         resetToolbarSearch()
-        _stackView.pop(null)
-        _stackView.currentItem.forceActiveFocus()
+        showLibrarySection(0)
     }
 
     function showCollections()
     {
         resetToolbarSearch()
-
-        if (_stackView.currentItem.objectName === "CollectionView")
-            return
-
-        if (_sideBarView.active)
-            _stackView.pop()
-
-        if (_stackView.currentItem.objectName !== "CollectionView")
-            _stackView.push(_collectionsViewComponent)
-
-        _stackView.currentItem.forceActiveFocus()
+        showLibrarySection(1)
     }
 
     function showTags()
     {
         resetToolbarSearch()
+        showLibrarySection(2)
+    }
 
-        if (_stackView.currentItem.objectName === "TagsView")
-            return
-
-        if (_sideBarView.active)
-            _stackView.pop()
-
-        if (_stackView.currentItem.objectName !== "TagsView")
-            _stackView.push(_tagsViewComponent)
-
-        _stackView.currentItem.forceActiveFocus()
+    function showQueue()
+    {
+        resetToolbarSearch()
+        showLibrarySection(3)
     }
 
     function openFolder(url, filters)
     {
         showCollections()
-        _stackView.currentItem.openFolder(url, filters)
-    }
-
-    function toggleViewer()
-    {
-        if (_sideBarView.active)
-        {
-            _stackView.pop()
-        } else {
-            resetToolbarSearch()
-            _stackView.push(_sideBarView)
-        }
-
-        _stackView.currentItem.forceActiveFocus()
+        _collectionsView.openFolder(url, filters)
     }
 
     function toggleFullScreen()
@@ -768,6 +1065,13 @@ Maui.ApplicationWindow
 
     function play(item)
     {
+        const existingIndex = indexOfQueuedItem(item.url)
+
+        if (existingIndex >= 0) {
+            playAt(existingIndex)
+            return
+        }
+
         queue(item)
         playAt(_playlist.list.count - 1)
     }
@@ -779,10 +1083,8 @@ Maui.ApplicationWindow
             _playerView.currentVideoIndex = index
             _playerView.currentVideo = _playlist.model.get(index)
 
-            if (!_sideBarView.active)
-                toggleViewer()
-
             _playerView.play()
+            _playerPage.forceActiveFocus()
         }
     }
 
@@ -802,9 +1104,119 @@ Maui.ApplicationWindow
             queue(item)
     }
 
+    function queueItemsIfMissing(items)
+    {
+        let added = 0
+
+        for (const item of items) {
+            if (!item || !item.url || indexOfQueuedItem(item.url) >= 0)
+                continue
+
+            queue(item)
+            added++
+        }
+
+        return added
+    }
+
     function queue(item)
     {
         _playlist.append(item)
+    }
+
+    function clearQueue()
+    {
+        _playlist.list.clear()
+        stopPlayback()
+    }
+
+    function togglePlayback()
+    {
+        if (!_playerView.currentVideo.url)
+            return
+
+        if (player.playbackState === MediaPlayer.PlayingState)
+            player.pause()
+        else
+            player.play()
+    }
+
+    function seekBy(offset)
+    {
+        if (!_playerView.currentVideo.url)
+            return
+
+        const maxPosition = Math.max(0, player.duration || 0)
+        const targetPosition = player.position + offset
+        const nextPosition = maxPosition > 0
+                           ? Math.max(0, Math.min(maxPosition, targetPosition))
+                           : Math.max(0, targetPosition)
+
+        player.seek(nextPosition)
+    }
+
+    function setPlayerVolume(value)
+    {
+        if (typeof _playerView.playerVolume !== "number")
+            return
+
+        const clamped = Math.max(0, Math.min(100, Math.round(value)))
+
+        if (clamped > 0)
+            lastAudibleVolume = clamped
+
+        _playerView.playerVolume = clamped
+    }
+
+    function adjustVolume(delta)
+    {
+        if (typeof _playerView.playerVolume !== "number")
+            return
+
+        setPlayerVolume((_playerView.playerVolume || 0) + delta)
+    }
+
+    function toggleMute()
+    {
+        if (typeof _playerView.playerVolume !== "number")
+            return
+
+        if ((_playerView.playerVolume || 0) > 0)
+            setPlayerVolume(0)
+        else
+            setPlayerVolume(lastAudibleVolume > 0 ? lastAudibleVolume : 100)
+    }
+
+    function volumeGlyph(volume)
+    {
+        if (volume <= 0)
+            return "\uf6a9"
+
+        if (volume < 50)
+            return "\uf027"
+
+        return "\uf028"
+    }
+
+    function indexOfQueuedItem(url)
+    {
+        for (let i = 0; i < _playlist.list.count; ++i) {
+            const queuedItem = _playlist.model.get(i)
+
+            if (queuedItem && queuedItem.url === url)
+                return i
+        }
+
+        return -1
+    }
+
+    function stopPlayback()
+    {
+        if (_playerView.stop)
+            _playerView.stop()
+
+        _playerView.currentVideoIndex = -1
+        _playerView.currentVideo = ({})
     }
 
     function openFileDialog()
@@ -817,6 +1229,12 @@ Maui.ApplicationWindow
         })
 
         const dialog = fmDialogComponent.createObject(root, props)
+        dialog.open()
+    }
+
+    function openUrlDialog()
+    {
+        const dialog = _openUrlDialogComponent.createObject(root)
         dialog.open()
     }
 
@@ -834,10 +1252,8 @@ Maui.ApplicationWindow
         _playerView.currentVideoIndex = -1
         _playerView.currentVideo = ({ label: url, url: url, preview: "" })
 
-        if (!_sideBarView.active)
-            toggleViewer()
-
         _playerView.play()
+        _playerPage.forceActiveFocus()
     }
 
     function tagFiles(urls)

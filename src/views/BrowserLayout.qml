@@ -12,7 +12,9 @@ Maui.AltBrowser
     id: control
 
     background: null
+    clip: true
     property bool useInternalChrome: true
+    property bool allowLassoSelection: true
     property string searchPlaceholder: i18n("Search videos")
     property bool showSortMenu: true
 
@@ -20,7 +22,9 @@ Maui.AltBrowser
     property alias urls: _collectionList.urls
     property alias listModel: _collectionModel
     property alias searchField: _searchField
-    property var selectionBar: null
+    property var selectionBar: ApplicationWindow.window && ApplicationWindow.window.selectionBar
+                               ? ApplicationWindow.window.selectionBar
+                               : null
 
     signal itemClicked(var item)
     signal itemRightClicked(var item)
@@ -39,7 +43,7 @@ Maui.AltBrowser
     headBar.forceCenterMiddleContent: false
     gridView.itemSize: 180
 
-    enableLassoSelection: true
+    enableLassoSelection: allowLassoSelection
 
     holder.visible: _collectionList.count === 0
     holder.emojiSize: Maui.Style.iconSizes.huge
@@ -56,8 +60,12 @@ Maui.AltBrowser
             if (!selectionBar)
                 return
 
-            for (var i in indexes)
-                selectionBar.insert(_collectionModel.get(indexes[i]))
+            for (var i in indexes) {
+                const item = _collectionModel.get(indexes[i])
+
+                if (item && item.url)
+                    selectionBar.append(item.url, item)
+            }
         }
 
         function onKeyPress(event)
@@ -66,6 +74,17 @@ Maui.AltBrowser
 
             if ((event.key == Qt.Key_Left || event.key == Qt.Key_Right || event.key == Qt.Key_Down || event.key == Qt.Key_Up) && (event.modifiers & Qt.ControlModifier) && (event.modifiers & Qt.ShiftModifier))
                 control.currentView.itemsSelected([index])
+        }
+    }
+
+    Connections
+    {
+        target: Clip.Clip
+
+        function onSourcesChanged()
+        {
+            if (_collectionList.urls.length === 1 && _collectionList.urls[0] === "collection:///")
+                _collectionList.rescan()
         }
     }
 

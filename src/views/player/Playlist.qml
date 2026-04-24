@@ -18,8 +18,8 @@ Maui.ListBrowser
 
     holder.visible: list.count === 0
     holder.emoji: "media-playlist-append"
-    holder.title: i18n("No Videos!")
-    holder.body: i18n("Add videos to the playlist.")
+    holder.title: i18n("Playlist is Empty")
+    holder.body: i18n("Play videos from your library to build a playlist.")
 
     Binding on currentIndex
     {

@@ -340,6 +340,7 @@ Maui.Page
             readonly property var folderInfo: FB.FM.getFileInfo(currentFolder)
 
             background: null
+            allowLassoSelection: false
             showTitle: false
             headBar.visible: false
             list.urls: currentFolder.length ? [currentFolder] : []

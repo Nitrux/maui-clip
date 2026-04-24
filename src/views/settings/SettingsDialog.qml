@@ -18,25 +18,7 @@ Maui.SettingsDialog
 
         Maui.FlexSectionItem
         {
-            label1.text: i18n("Volume Step")
-
-            SpinBox
-            {
-                value: settings.volumeStep
-                from: 0
-                to: 20
-                onValueChanged: settings.volumeStep = value
-            }
-        }
-    }
-
-    Maui.SectionGroup
-    {
-        title: i18n("Playback")
-        enabled: Clip.Clip.mpvAvailable
-
-        Maui.FlexSectionItem
-        {
+            enabled: Clip.Clip.mpvAvailable
             label1.text: i18n("Hardware Decoding")
             label2.text: i18n("Use hardware acceleration for playback when available.")
 
@@ -47,23 +29,17 @@ Maui.SettingsDialog
                 onToggled: settings.hardwareDecoding = !settings.hardwareDecoding
             }
         }
-    }
 
-    Maui.SectionGroup
-    {
-        title: i18n("Audio")
-        enabled: Clip.Clip.mpvAvailable
-
-        Maui.SectionItem
+        Maui.FlexSectionItem
         {
-            label1.text: i18n("Preferred Language")
-            label2.text: i18n("Preferred language if available.")
+            label1.text: i18n("Hide Player Chrome in Full Screen")
+            label2.text: i18n("Hide the header and playback controls while watching videos in full screen.")
 
-            TextField
+            Switch
             {
-                Layout.fillWidth: true
-                text: settings.preferredLanguage
-                onAccepted: settings.preferredLanguage = text
+                checkable: true
+                checked: settings.hidePlayerChromeInFullScreen
+                onToggled: settings.hidePlayerChromeInFullScreen = !settings.hidePlayerChromeInFullScreen
             }
         }
     }

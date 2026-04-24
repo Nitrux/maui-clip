@@ -30,6 +30,7 @@ StackView
         {
             id: _tagBrowser
             useInternalChrome: control.useInternalChrome
+            allowLassoSelection: false
             showTitle: false
             title: control.currentTag
             background: null
@@ -54,13 +55,13 @@ StackView
 
     function search(text)
     {
-        if (filteringTag)
+        if (currentItem && currentItem.search)
             currentItem.search(text)
     }
 
     function clearSearch()
     {
-        if (filteringTag)
+        if (currentItem && currentItem.clearSearch)
             currentItem.clearSearch()
     }
 

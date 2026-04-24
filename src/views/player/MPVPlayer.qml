@@ -13,6 +13,7 @@ MpvObject
     id: control
     property alias url : control.source
     property alias video : control
+    property alias playerVolume : control.volume
 
     readonly property bool isPlaying : control.playbackState === MediaPlayer.PlayingState
     readonly property bool isPaused : control.playbackState === MediaPlayer.PausedState
@@ -59,7 +60,6 @@ MpvObject
     }
 
 }
-
 
 
 

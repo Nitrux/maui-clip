@@ -204,4 +204,14 @@ Maui.AltBrowser
         _collectionModel.sort = sortOptions[index].sort
         _collectionModel.sortOrder = sortOptions[index].order
     }
+
+    function search(text)
+    {
+        _collectionModel.filter = text
+    }
+
+    function clearSearch()
+    {
+        _collectionModel.filter = ""
+    }
 }
