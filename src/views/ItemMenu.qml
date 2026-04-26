@@ -42,6 +42,19 @@ Maui.ContextualMenu
         }
     }
 
+    MenuItem
+    {
+        text: i18nc("@action:inmenu", "Tag")
+        icon.name: "tag"
+        onTriggered:
+        {
+            const item = model ? model.get(index) : null
+
+            if (item && item.url)
+                tagFiles([item.url])
+        }
+    }
+
     MenuSeparator{}
 
     MenuItem

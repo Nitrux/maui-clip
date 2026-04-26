@@ -206,7 +206,6 @@ Maui.ApplicationWindow
         id: tagsDialogComponent
         FB.TagsDialog
         {
-            onTagsReady: composerList.updateToUrls(tags)
             composerList.strict: false
         }
     }

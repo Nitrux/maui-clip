@@ -93,6 +93,20 @@ Maui.SelectionBar
 
     Action
     {
+        text: i18n("Tag")
+        icon.name: "tag"
+        enabled: control.count > 0
+        onTriggered:
+        {
+            if (!windowRoot)
+                return
+
+            windowRoot.tagFiles(control.uris)
+        }
+    }
+
+    Action
+    {
         text: i18n("Remove")
         icon.name: "edit-delete"
         enabled: control.count > 0
