@@ -314,6 +314,7 @@ Maui.ApplicationWindow
         headBar.rightContent: [
             Maui.ToolButtonMenu
             {
+                id: _displayOptionsMenu
                 icon.name: "configure"
                 readonly property bool trackOptionsVisible: _playerView.hasSubtitleTracks || _playerView.hasAudioTracks
 
@@ -361,7 +362,7 @@ Maui.ApplicationWindow
 
                 MenuSeparator
                 {
-                    visible: trackOptionsVisible
+                    visible: _displayOptionsMenu.trackOptionsVisible
                     implicitHeight: visible ? 1 + (Maui.Style.space.tiny * 2) : 0
                     height: implicitHeight
                 }

@@ -92,9 +92,15 @@ MpvObject
                 Layout.fillWidth: true
                 label1.text: model.text
                 label2.text: model.language
-                checkable: true
-                autoExclusive: true
-                checked: control.subtitleId === model.id
+                template.content: Label
+                {
+                    text: control.subtitleId === model.id ? "\uf00c" : ""
+                    font.family: "Font Awesome 6 Free Solid"
+                    font.pixelSize: Maui.Style.fontSizes.small
+                    font.weight: Font.Black
+                    color: Maui.Theme.highlightColor
+                    verticalAlignment: Text.AlignVCenter
+                }
                 onClicked:
                 {
                     control.subtitleId = model.id
@@ -118,9 +124,15 @@ MpvObject
                 Layout.fillWidth: true
                 label1.text: model.text
                 label2.text: model.language
-                checkable: true
-                autoExclusive: true
-                checked: control.audioId === model.id
+                template.content: Label
+                {
+                    text: control.audioId === model.id ? "\uf00c" : ""
+                    font.family: "Font Awesome 6 Free Solid"
+                    font.pixelSize: Maui.Style.fontSizes.small
+                    font.weight: Font.Black
+                    color: Maui.Theme.highlightColor
+                    verticalAlignment: Text.AlignVCenter
+                }
                 onClicked:
                 {
                     control.audioId = model.id
