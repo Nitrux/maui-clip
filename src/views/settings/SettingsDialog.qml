@@ -18,7 +18,6 @@ Maui.SettingsDialog
 
         Maui.FlexSectionItem
         {
-            enabled: Clip.Clip.mpvAvailable
             label1.text: i18n("Hardware Decoding")
             label2.text: i18n("Use hardware acceleration for playback when available.")
 

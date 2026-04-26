@@ -10,7 +10,6 @@ class Clip : public QObject
     Q_OBJECT
     Q_PROPERTY(QVariantList sourcesModel READ sourcesModel NOTIFY sourcesChanged FINAL)
     Q_PROPERTY(QStringList sources READ sources NOTIFY sourcesChanged FINAL)
-    Q_PROPERTY(bool mpvAvailable READ mpvAvailable CONSTANT FINAL)
 
 public:
     static Clip * instance()
@@ -23,9 +22,6 @@ public:
     Clip &operator=(const Clip &) = delete;
     Clip(Clip &&) = delete;
     Clip &operator=(Clip &&) = delete;
-
-    bool mpvAvailable() const;
-    void setMpvAvailable(bool available);
 
 public Q_SLOTS:
     QVariantList sourcesModel() const;
@@ -54,5 +50,4 @@ Q_SIGNALS:
     void sourcesChanged();
 
 private:
-    bool m_mpvAvailable = false;
 };

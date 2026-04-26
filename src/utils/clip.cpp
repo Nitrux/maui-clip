@@ -105,16 +105,6 @@ void Clip::removeSourcePath(const QString &path)
     settings.endGroup();
 }
 
-bool Clip::mpvAvailable() const
-{
-    return m_mpvAvailable;
-}
-
-void Clip::setMpvAvailable(bool available)
-{
-    m_mpvAvailable = available;
-}
-
 QVariantList Clip::sourcesModel() const
 {
     QVariantList res;

@@ -15,6 +15,7 @@ class Track;
 class TracksModel : public QAbstractListModel
 {
     Q_OBJECT
+    Q_PROPERTY(int count READ count NOTIFY countChanged)
 public:
     explicit TracksModel(QObject *parent = nullptr);
     enum {
@@ -24,12 +25,17 @@ public:
         IDRole,
         CodecRole
     };
+    int count() const;
     int rowCount(const QModelIndex &parent = QModelIndex()) const override;
     QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
     virtual QHash<int, QByteArray> roleNames() const override;
 
 public Q_SLOTS:
     void setTracks(QMap<int, Track *> tracks);
+
+Q_SIGNALS:
+    void countChanged();
+
 private:
     QMap<int, Track *> m_tracks;
 };

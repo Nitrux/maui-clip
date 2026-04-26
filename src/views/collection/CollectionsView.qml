@@ -379,7 +379,10 @@ Maui.Page
                 }
             }
 
-            onItemClicked: play(item)
+            onItemClicked: function(item)
+            {
+                play(item)
+            }
 
             Component.onCompleted: syncFolderSource()
             onCurrentFolderChanged: syncFolderSource()

@@ -82,22 +82,22 @@ static QString graphicsApiName(QSGRendererInterface::GraphicsApi api)
     return QStringLiteral("GraphicsApi(%1)").arg(static_cast<int>(api));
 }
 
-static bool canUseMpvBackend()
+static void configureGraphicsApiForMpv()
 {
     const auto graphicsApi = QQuickWindow::graphicsApi();
-    const bool supported = graphicsApi == QSGRendererInterface::OpenGL;
-
-    if (!supported) {
-        qWarning() << "Using the QtMultimedia fallback because the scene graph is using"
-                   << graphicsApiName(graphicsApi)
-                   << "instead of OpenGL. MpvObject still depends on QQuickFramebufferObject.";
+    if (graphicsApi != QSGRendererInterface::Unknown
+        && graphicsApi != QSGRendererInterface::OpenGL) {
+        qInfo() << "Forcing the scene graph to use OpenGL for Clip's mpv backend instead of"
+                << graphicsApiName(graphicsApi);
     }
 
-    return supported;
+    QQuickWindow::setGraphicsApi(QSGRendererInterface::OpenGL);
 }
 
 Q_DECL_EXPORT int main(int argc, char *argv[])
 {
+    configureGraphicsApiForMpv();
+
     QSurfaceFormat format;
     format.setAlphaBufferSize(8);
     QSurfaceFormat::setDefaultFormat(format);
@@ -161,9 +161,6 @@ Q_DECL_EXPORT int main(int argc, char *argv[])
         arguments.second = openFiles(args);
     }
 
-    const bool useMpvBackend = canUseMpvBackend();
-    Clip::instance()->setMpvAvailable(useMpvBackend);
-
     QQmlApplicationEngine engine;
     const QUrl url(QStringLiteral("qrc:/app/maui/clip/main.qml"));
     QObject::connect(&engine, &QQmlApplicationEngine::objectCreated,
@@ -189,13 +186,9 @@ Q_DECL_EXPORT int main(int argc, char *argv[])
     engine.addImageProvider("preview", new Thumbnailer());
 #endif
 
-    if (useMpvBackend) {
-        qRegisterMetaType<TracksModel*>();
-        qmlRegisterType<MpvObject>("mpv", 1, 0, "MpvObject");
-        qmlRegisterType(QUrl("qrc:/app/maui/clip/views/player/MPVPlayer.qml"), CLIP_URI, 1, 0, "Video");
-    } else {
-        qmlRegisterType(QUrl("qrc:/app/maui/clip/views/player/Player.qml"), CLIP_URI, 1, 0, "Video");
-    }
+    qRegisterMetaType<TracksModel*>();
+    qmlRegisterType<MpvObject>("mpv", 1, 0, "MpvObject");
+    qmlRegisterType(QUrl("qrc:/app/maui/clip/views/player/MPVPlayer.qml"), CLIP_URI, 1, 0, "Video");
 
     engine.load(url);
 

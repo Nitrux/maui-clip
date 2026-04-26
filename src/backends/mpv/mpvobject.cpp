@@ -20,7 +20,6 @@
 #include <QOpenGLFramebufferObject>
 #include <QOpenGLFramebufferObjectFormat>
 #include <QOpenGLFunctions>
-#include <QProcess>
 #include <QQuickWindow>
 #include <QStandardPaths>
 #include <QtGlobal>
@@ -136,6 +135,8 @@ MpvObject::MpvObject(QQuickItem * parent)
         setProperty("hwdec", "no");
     }
 
+    // Force libmpv's embeddable renderer so playback stays inside Clip.
+    setProperty("vo", "libmpv");
     setProperty("screenshot-template", "%x/screenshots/%n");
     setProperty("sub-auto", "exact");
 

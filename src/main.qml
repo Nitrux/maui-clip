@@ -315,6 +315,7 @@ Maui.ApplicationWindow
             Maui.ToolButtonMenu
             {
                 icon.name: "configure"
+                readonly property bool trackOptionsVisible: _playerView.hasSubtitleTracks || _playerView.hasAudioTracks
 
                 MenuItem
                 {
@@ -356,6 +357,28 @@ Maui.ApplicationWindow
                     autoExclusive: true
                     checked: player.fillMode === VideoOutput.Stretch
                     onTriggered: player.fillMode = VideoOutput.Stretch
+                }
+
+                MenuSeparator
+                {
+                    visible: trackOptionsVisible
+                    height: visible ? implicitHeight : 0
+                }
+
+                MenuItem
+                {
+                    visible: _playerView.hasSubtitleTracks
+                    height: visible ? implicitHeight : 0
+                    text: i18n("Subtitles")
+                    onTriggered: _playerView.openSubtitlesDialog()
+                }
+
+                MenuItem
+                {
+                    visible: _playerView.hasAudioTracks
+                    height: visible ? implicitHeight : 0
+                    text: i18n("Audio Tracks")
+                    onTriggered: _playerView.openAudioTracksDialog()
                 }
             },
 
@@ -870,7 +893,11 @@ Maui.ApplicationWindow
                         {
                             Layout.fillWidth: true
                             Layout.fillHeight: true
-                            onDoubleClicked: player.seek(player.position - 5000)
+                            onDoubleClicked:
+                            {
+                                seekBy(-5000)
+                                _seekBackwardOverlay.restart()
+                            }
                         }
 
                         MouseArea
@@ -885,7 +912,224 @@ Maui.ApplicationWindow
                         {
                             Layout.fillWidth: true
                             Layout.fillHeight: true
-                            onDoubleClicked: player.seek(player.position + 5000)
+                            onDoubleClicked:
+                            {
+                                seekBy(5000)
+                                _seekForwardOverlay.restart()
+                            }
+                        }
+                    }
+                }
+
+                Item
+                {
+                    anchors.fill: parent
+                    visible: !_playerHolderLoader.active
+                    enabled: false
+
+                    Rectangle
+                    {
+                        id: _seekBackwardOverlay
+                        width: Math.min(parent.width * 0.12, Maui.Style.units.gridUnit * 5)
+                        height: width
+                        radius: width / 2
+                        anchors.verticalCenter: parent.verticalCenter
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        anchors.horizontalCenterOffset: -Math.min(parent.width * 0.4, Maui.Style.units.gridUnit * 16)
+                        color: Qt.rgba(0.08, 0.09, 0.15, 0.68)
+                        border.color: Qt.rgba(1, 1, 1, 0.12)
+                        border.width: 1
+                        opacity: 0
+                        scale: 0.84
+                        visible: opacity > 0
+
+                        Column
+                        {
+                            anchors.centerIn: parent
+                            spacing: Maui.Style.space.tiny
+
+                            Label
+                            {
+                                anchors.horizontalCenter: parent.horizontalCenter
+                                text: "\uf04a"
+                                font.family: "Font Awesome 6 Free Solid"
+                                font.pixelSize: Maui.Style.fontSizes.big
+                                font.weight: Font.Black
+                                color: "white"
+                                horizontalAlignment: Text.AlignHCenter
+                            }
+
+                            Label
+                            {
+                                anchors.horizontalCenter: parent.horizontalCenter
+                                text: i18n("-5s")
+                                font.pixelSize: Maui.Style.fontSizes.small
+                                font.weight: Font.DemiBold
+                                color: "white"
+                                horizontalAlignment: Text.AlignHCenter
+                            }
+                        }
+
+                        SequentialAnimation on opacity
+                        {
+                            id: _seekBackwardOpacityAnimation
+                            running: false
+
+                            NumberAnimation
+                            {
+                                to: 1
+                                duration: 120
+                                easing.type: Easing.OutQuad
+                            }
+
+                            PauseAnimation
+                            {
+                                duration: 240
+                            }
+
+                            NumberAnimation
+                            {
+                                to: 0
+                                duration: 210
+                                easing.type: Easing.InQuad
+                            }
+                        }
+
+                        SequentialAnimation on scale
+                        {
+                            id: _seekBackwardScaleAnimation
+                            running: false
+
+                            NumberAnimation
+                            {
+                                to: 1
+                                duration: 160
+                                easing.type: Easing.OutBack
+                                easing.overshoot: 1.08
+                            }
+
+                            PauseAnimation
+                            {
+                                duration: 200
+                            }
+
+                            NumberAnimation
+                            {
+                                to: 0.9
+                                duration: 210
+                                easing.type: Easing.InQuad
+                            }
+                        }
+
+                        function restart()
+                        {
+                            opacity = 0
+                            scale = 0.84
+                            _seekBackwardOpacityAnimation.restart()
+                            _seekBackwardScaleAnimation.restart()
+                        }
+                    }
+
+                    Rectangle
+                    {
+                        id: _seekForwardOverlay
+                        width: Math.min(parent.width * 0.12, Maui.Style.units.gridUnit * 5)
+                        height: width
+                        radius: width / 2
+                        anchors.verticalCenter: parent.verticalCenter
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        anchors.horizontalCenterOffset: Math.min(parent.width * 0.4, Maui.Style.units.gridUnit * 16)
+                        color: Qt.rgba(0.08, 0.09, 0.15, 0.68)
+                        border.color: Qt.rgba(1, 1, 1, 0.12)
+                        border.width: 1
+                        opacity: 0
+                        scale: 0.84
+                        visible: opacity > 0
+
+                        Column
+                        {
+                            anchors.centerIn: parent
+                            spacing: Maui.Style.space.tiny
+
+                            Label
+                            {
+                                anchors.horizontalCenter: parent.horizontalCenter
+                                text: "\uf04e"
+                                font.family: "Font Awesome 6 Free Solid"
+                                font.pixelSize: Maui.Style.fontSizes.big
+                                font.weight: Font.Black
+                                color: "white"
+                                horizontalAlignment: Text.AlignHCenter
+                            }
+
+                            Label
+                            {
+                                anchors.horizontalCenter: parent.horizontalCenter
+                                text: i18n("+5s")
+                                font.pixelSize: Maui.Style.fontSizes.small
+                                font.weight: Font.DemiBold
+                                color: "white"
+                                horizontalAlignment: Text.AlignHCenter
+                            }
+                        }
+
+                        SequentialAnimation on opacity
+                        {
+                            id: _seekForwardOpacityAnimation
+                            running: false
+
+                            NumberAnimation
+                            {
+                                to: 1
+                                duration: 120
+                                easing.type: Easing.OutQuad
+                            }
+
+                            PauseAnimation
+                            {
+                                duration: 240
+                            }
+
+                            NumberAnimation
+                            {
+                                to: 0
+                                duration: 210
+                                easing.type: Easing.InQuad
+                            }
+                        }
+
+                        SequentialAnimation on scale
+                        {
+                            id: _seekForwardScaleAnimation
+                            running: false
+
+                            NumberAnimation
+                            {
+                                to: 1
+                                duration: 160
+                                easing.type: Easing.OutBack
+                                easing.overshoot: 1.08
+                            }
+
+                            PauseAnimation
+                            {
+                                duration: 200
+                            }
+
+                            NumberAnimation
+                            {
+                                to: 0.9
+                                duration: 210
+                                easing.type: Easing.InQuad
+                            }
+                        }
+
+                        function restart()
+                        {
+                            opacity = 0
+                            scale = 0.84
+                            _seekForwardOpacityAnimation.restart()
+                            _seekForwardScaleAnimation.restart()
                         }
                     }
                 }
@@ -927,6 +1171,19 @@ Maui.ApplicationWindow
                     onMoved: player.seek(_slider.value)
                     spacing: 0
                     focus: true
+
+                    MouseArea
+                    {
+                        anchors.fill: parent
+                        acceptedButtons: Qt.NoButton
+                        hoverEnabled: true
+                        z: 10
+
+                        onWheel: function(wheel)
+                        {
+                            wheel.accepted = true
+                        }
+                    }
                 }
 
                 footBar.rightContent: [
@@ -955,9 +1212,31 @@ Maui.ApplicationWindow
                         implicitWidth: Maui.Style.units.gridUnit * 7
                         from: 0
                         to: 100
+                        stepSize: 5
                         enabled: typeof _playerView.playerVolume === "number"
                         value: enabled ? _playerView.playerVolume : 100
                         onMoved: setPlayerVolume(value)
+
+                        MouseArea
+                        {
+                            anchors.fill: parent
+                            acceptedButtons: Qt.NoButton
+                            hoverEnabled: true
+                            z: 10
+
+                            onWheel: function(wheel)
+                            {
+                                if (!_volumeSlider.enabled)
+                                    return
+
+                                const delta = wheel.angleDelta.y !== 0 ? wheel.angleDelta.y : wheel.pixelDelta.y
+                                if (delta === 0)
+                                    return
+
+                                setPlayerVolume(_volumeSlider.value + (delta > 0 ? _volumeSlider.stepSize : -_volumeSlider.stepSize))
+                                wheel.accepted = true
+                            }
+                        }
                     }
                 ]
 

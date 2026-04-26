@@ -40,7 +40,10 @@ StackView
             holder.title: i18n("No Videos!")
             holder.body: i18n("There are no videos associated with this tag.")
 
-            onItemClicked: play(item)
+            onItemClicked: function(item)
+            {
+                play(item)
+            }
 
             Component.onCompleted: syncTagSource()
             onTitleChanged: syncTagSource()

@@ -15,6 +15,11 @@ TracksModel::TracksModel(QObject *parent)
 
 }
 
+int TracksModel::count() const
+{
+    return rowCount();
+}
+
 int TracksModel::rowCount(const QModelIndex &/*parent*/) const
 {
     return m_tracks.size();
@@ -59,4 +64,5 @@ void TracksModel::setTracks(QMap<int, Track *> tracks)
     beginResetModel();
     m_tracks = std::move(tracks);
     endResetModel();
+    Q_EMIT countChanged();
 }

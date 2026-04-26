@@ -19,5 +19,8 @@ BrowserLayout
     holder.title: i18n("No Videos!")
     holder.body: i18n("Nothing here.")
 
-    onItemClicked: play(item)
+    onItemClicked: function(item)
+    {
+        play(item)
+    }
 }
