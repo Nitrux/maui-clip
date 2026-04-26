@@ -66,13 +66,7 @@ Maui.ListBrowser
             Layout.preferredWidth: implicitWidth
             visible: (Maui.Handy.isTouch ? true : _listDelegate.hovered)
             icon.name: "edit-clear"
-            onClicked:
-            {
-                if(index === _playerView.currentVideoIndex)
-                    player.video.stop()
-
-                _collectionList.remove(index)
-            }
+            onClicked: root.removeQueuedItem(index)
 
             opacity: _listDelegate.hovered ? 0.8 : 0.6
         }

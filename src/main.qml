@@ -1,5 +1,6 @@
 import QtQuick
 import QtCore
+import QtQml
 import QtQuick.Controls
 import QtQuick.Layouts
 import QtQuick.Window
@@ -28,6 +29,11 @@ Maui.ApplicationWindow
     property bool selectionMode: false
     property int lastAudibleVolume: 100
     property bool suppressToolbarSearchCallbacks: false
+    property real visualPlayerPosition: 0
+    property real visualPlayerPositionSyncValue: 0
+    property double visualPlayerPositionSyncTimestamp: 0
+    property real cachedPlayerDuration: 0
+    property bool reachedEndOfFile: false
     property var shuffledPlaybackHistory: []
     property int shuffledPlaybackHistoryPosition: -1
     readonly property int replayModeOff: 0
@@ -928,7 +934,7 @@ Maui.ApplicationWindow
                                     player.pause()
                                     _playbackStateOverlay.showPause()
                                 } else {
-                                    player.play()
+                                    startPlayback()
                                     _playbackStateOverlay.showPlay()
                                 }
                             }
@@ -1308,13 +1314,27 @@ Maui.ApplicationWindow
                     padding: 0
                     orientation: Qt.Horizontal
                     from: 0
-                    to: player.duration
-                    value: player.position
+                    to: cachedPlayerDuration || player.duration
+                    live: true
                     Layout.preferredHeight: 22
                     enabled: !!_playerView.currentVideo.url
-                    onMoved: player.seek(_slider.value)
                     spacing: 0
                     focus: true
+
+                    Binding on value
+                    {
+                        when: !_slider.pressed
+                        value: displayedPlayerPosition()
+                        restoreMode: Binding.RestoreBindingOrValue
+                    }
+
+                    onPressedChanged:
+                    {
+                        if (!pressed) {
+                            syncVisualPlayerPosition(_slider.value)
+                            player.seek(_slider.value)
+                        }
+                    }
 
                     MouseArea
                     {
@@ -1333,7 +1353,7 @@ Maui.ApplicationWindow
                 footBar.rightContent: [
                     Label
                     {
-                        text: Maui.Handy.formatTime(player.position / 1000) + " / " + Maui.Handy.formatTime(player.duration / 1000)
+                        text: Maui.Handy.formatTime(Math.round(displayedPlayerPosition() / 1000)) + " / " + Maui.Handy.formatTime(Math.round(player.duration / 1000))
                     },
 
                     ToolButton
@@ -1401,7 +1421,7 @@ Maui.ApplicationWindow
                     {
                         icon.name: player.isPlaying ? "media-playback-pause" : "media-playback-start"
                         enabled: !!_playerView.currentVideo.url
-                        onTriggered: player.isPaused ? player.play() : player.pause()
+                        onTriggered: player.isPlaying ? player.pause() : startPlayback()
                     }
 
                     Action
@@ -1456,9 +1476,41 @@ Maui.ApplicationWindow
         target: _playerView.player
         ignoreUnknownSignals: true
 
+        function onPositionChanged()
+        {
+            syncVisualPlayerPosition(player.position)
+        }
+
+        function onDurationChanged()
+        {
+            if (player.duration > 0)
+                cachedPlayerDuration = player.duration
+            syncVisualPlayerPosition(player.position)
+        }
+
+        function onPlaybackStateChanged()
+        {
+            syncVisualPlayerPosition(player.position)
+        }
+
+        function onStatusChanged()
+        {
+            if (player.status === MediaPlayer.EndOfMedia)
+                syncVisualPlayerPosition(cachedPlayerDuration)
+            else
+                syncVisualPlayerPosition(player.position)
+        }
+
         function onEndOfFile()
         {
+            reachedEndOfFile = true
+            visualPlayerPosition = cachedPlayerDuration
             handlePlaybackEnded()
+        }
+
+        function onFileLoaded()
+        {
+            reachedEndOfFile = false
         }
     }
 
@@ -1469,6 +1521,19 @@ Maui.ApplicationWindow
         function onReplayModeChanged()
         {
             applyReplayModeToPlayer()
+        }
+    }
+
+    Timer
+    {
+        interval: 33
+        repeat: true
+        running: !!_playerView.currentVideo.url && player.playbackState === MediaPlayer.PlayingState && !_slider.pressed
+        onTriggered:
+        {
+            const elapsed = Date.now() - visualPlayerPositionSyncTimestamp
+            const projected = visualPlayerPositionSyncValue + elapsed
+            visualPlayerPosition = Math.max(0, Math.min(cachedPlayerDuration || 0, projected))
         }
     }
 
@@ -1554,6 +1619,26 @@ Maui.ApplicationWindow
             root.showFullScreen()
     }
 
+    function syncVisualPlayerPosition(position)
+    {
+        const duration = cachedPlayerDuration || player.duration || 0
+        const nextPosition = Math.max(0, Math.min(duration, position || 0))
+        visualPlayerPosition = nextPosition
+        visualPlayerPositionSyncValue = nextPosition
+        visualPlayerPositionSyncTimestamp = Date.now()
+    }
+
+    function displayedPlayerPosition()
+    {
+        if (_slider.pressed)
+            return _slider.value
+
+        if (reachedEndOfFile)
+            return cachedPlayerDuration
+
+        return visualPlayerPosition
+    }
+
     function currentQueuedVideoIsActive()
     {
         if (_playerView.currentVideoIndex < 0 || _playerView.currentVideoIndex >= _playlist.list.count)
@@ -1586,6 +1671,29 @@ Maui.ApplicationWindow
         shuffledPlaybackHistoryPosition = history.length - 1
     }
 
+    function removeFromShuffleHistory(url)
+    {
+        if (!url || shuffledPlaybackHistory.length === 0)
+            return
+
+        const history = []
+        let nextHistoryPosition = shuffledPlaybackHistoryPosition
+
+        for (let i = 0; i < shuffledPlaybackHistory.length; ++i) {
+            if (shuffledPlaybackHistory[i] === url) {
+                if (i <= nextHistoryPosition)
+                    nextHistoryPosition--
+
+                continue
+            }
+
+            history.push(shuffledPlaybackHistory[i])
+        }
+
+        shuffledPlaybackHistory = history
+        shuffledPlaybackHistoryPosition = Math.max(-1, Math.min(nextHistoryPosition, history.length - 1))
+    }
+
     function randomQueuedIndex(excludedIndex)
     {
         if (_playlist.list.count <= 0)
@@ -1615,6 +1723,18 @@ Maui.ApplicationWindow
         }
 
         _playerPage.forceActiveFocus()
+        return true
+    }
+
+    function startPlayback()
+    {
+        if (!_playerView.currentVideo.url)
+            return false
+
+        if (player.status === MediaPlayer.EndOfMedia)
+            return restartCurrentVideo()
+
+        player.play()
         return true
     }
 
@@ -1787,6 +1907,45 @@ Maui.ApplicationWindow
         _playlist.append(item)
     }
 
+    function removeQueuedItem(index)
+    {
+        if (index < 0 || index >= _playlist.list.count)
+            return false
+
+        const removedItem = _playlist.model.get(index)
+        const removedUrl = removedItem ? removedItem.url : ""
+        const removedCurrentItem = index === _playerView.currentVideoIndex
+        const previousIndex = _playerView.currentVideoIndex
+
+        if (removedUrl)
+            removeFromShuffleHistory(removedUrl)
+
+        _playlist.list.remove(index)
+
+        if (_playlist.list.count === 0) {
+            resetShuffleHistory()
+            stopPlayback()
+            return true
+        }
+
+        if (!removedCurrentItem) {
+            if (index < previousIndex)
+                _playerView.currentVideoIndex = previousIndex - 1
+
+            return true
+        }
+
+        const replacementIndex = Math.min(index, _playlist.list.count - 1)
+        const replacementItem = _playlist.model.get(replacementIndex)
+
+        _playerView.currentVideoIndex = replacementIndex
+        _playerView.currentVideo = replacementItem || ({})
+        applyReplayModeToPlayer()
+        startPlayback()
+        _playerPage.forceActiveFocus()
+        return true
+    }
+
     function clearQueue()
     {
         resetShuffleHistory()
@@ -1802,7 +1961,7 @@ Maui.ApplicationWindow
         if (player.playbackState === MediaPlayer.PlayingState)
             player.pause()
         else
-            player.play()
+            startPlayback()
     }
 
     function seekBy(offset)

@@ -457,6 +457,7 @@ void MpvObject::eventHandler()
             auto prop = (mpv_event_end_file *)event->data;
             if (prop->reason == MPV_END_FILE_REASON_EOF) {
                 m_eofTransitionInProgress = true;
+                setPlaybackState(QMediaPlayer::StoppedState);
                 setStatus(QMediaPlayer::EndOfMedia);
                 Q_EMIT endOfFile();
             } else if (prop ->reason == MPV_END_FILE_REASON_ERROR) {
