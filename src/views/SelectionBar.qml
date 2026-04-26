@@ -8,17 +8,35 @@ Maui.SelectionBar
     id: control
 
     readonly property var windowRoot: ApplicationWindow.window
+    property bool selectionModeActivationQueued: false
 
     display: ToolButton.IconOnly
 
     onCountChanged:
     {
-        if (windowRoot)
-            windowRoot.selectionMode = count > 0
+        if (!windowRoot)
+            return
+
+        if (count > 0) {
+            if (!windowRoot.selectionMode && !selectionModeActivationQueued) {
+                selectionModeActivationQueued = true
+                Qt.callLater(function()
+                {
+                    selectionModeActivationQueued = false
+
+                    if (windowRoot && control.count > 0)
+                        windowRoot.selectionMode = true
+                })
+            }
+        } else {
+            selectionModeActivationQueued = false
+            windowRoot.selectionMode = false
+        }
     }
 
     onExitClicked:
     {
+        selectionModeActivationQueued = false
         clear()
 
         if (windowRoot)

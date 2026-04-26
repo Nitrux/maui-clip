@@ -1854,6 +1854,7 @@ Maui.ApplicationWindow
         if ((index < _playlist.list.count) && (index > -1))
         {
             const queuedItem = _playlist.model.get(index)
+            const sameSource = !!(queuedItem && queuedItem.url && queuedItem.url === _playerView.currentVideo.url)
 
             if (!playbackOptions.skipHistory && queuedItem && queuedItem.url)
                 rememberShuffledPlayback(queuedItem.url)
@@ -1862,7 +1863,12 @@ Maui.ApplicationWindow
             _playerView.currentVideo = queuedItem
 
             applyReplayModeToPlayer()
-            _playerView.play()
+
+            if (sameSource)
+                startPlayback()
+            else
+                _playerView.play()
+
             _playerPage.forceActiveFocus()
             return true
         }
