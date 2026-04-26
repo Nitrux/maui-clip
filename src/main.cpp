@@ -43,12 +43,12 @@ static const  QList<QUrl> getFolderVideos(const QString &path)
 
     if (QFileInfo(path).isDir())
     {
-        QDirIterator it(path, FMStatic::FILTER_LIST[FMStatic::FILTER_TYPE::IMAGE], QDir::Files, QDirIterator::Subdirectories);
+        QDirIterator it(path, FMStatic::FILTER_LIST[FMStatic::FILTER_TYPE::VIDEO], QDir::Files, QDirIterator::Subdirectories);
         while (it.hasNext())
             urls << QUrl::fromLocalFile(it.next());
 
     }else if (QFileInfo(path).isFile())
-        urls << path;
+        urls << QUrl::fromLocalFile(path);
 
     return urls;
 }

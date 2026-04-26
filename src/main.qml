@@ -40,9 +40,6 @@ Maui.ApplicationWindow
     readonly property bool collectionsFolderActive: !!(collectionsActive && currentRoute && currentRoute.browsingFolder)
     readonly property bool tagsFilterActive: !!(tagsActive && currentRoute && currentRoute.filteringTag)
     readonly property bool tagsGridActive: !!(tagsActive && currentRoute && !currentRoute.filteringTag)
-    readonly property bool browserSearchVisible: collectionsActive || tagsFilterActive
-    readonly property bool browserSortVisible: collectionsFolderActive
-    readonly property bool shellBackVisible: collectionsFolderActive || tagsFilterActive
     readonly property bool fullScreenPlaybackChromeAutoHide: settings.hidePlayerChromeInFullScreen
                                                              && root.visibility === Window.FullScreen
                                                              && !!_playerView.currentVideo.url
@@ -50,13 +47,6 @@ Maui.ApplicationWindow
                                                             || _fullScreenTopRevealArea.containsMouse
                                                             || _fullScreenBottomRevealArea.containsMouse
     property real fullScreenPlaybackChromeOpacity: fullScreenPlaybackChromeVisible ? 1 : 0
-    readonly property string browserSearchPlaceholder: tagsGridActive
-                                                     ? i18n("Search tags")
-                                                     : (tagsFilterActive
-                                                        ? i18n("Search videos")
-                                                        : (collectionsActive
-                                                           ? (collectionsFolderActive ? i18n("Search videos") : i18n("Search library"))
-                                                           : i18n("Search videos")))
 
     Maui.WindowBlur
     {
@@ -333,10 +323,14 @@ Maui.ApplicationWindow
                     onTriggered: root.toggleFullScreen()
                 }
 
-                MenuSeparator {}
+                MenuSeparator
+                {
+                    visible: player.supportsFillMode
+                }
 
                 MenuItem
                 {
+                    visible: player.supportsFillMode
                     text: i18n("Fit to Screen")
                     checkable: true
                     autoExclusive: true
@@ -346,6 +340,7 @@ Maui.ApplicationWindow
 
                 MenuItem
                 {
+                    visible: player.supportsFillMode
                     text: i18n("Crop to Screen")
                     checkable: true
                     autoExclusive: true
@@ -355,6 +350,7 @@ Maui.ApplicationWindow
 
                 MenuItem
                 {
+                    visible: player.supportsFillMode
                     text: i18n("Stretch to Screen")
                     checkable: true
                     autoExclusive: true
@@ -459,8 +455,6 @@ Maui.ApplicationWindow
 
                         onCurrentIndexChanged:
                         {
-                            resetToolbarSearch()
-
                             if (_workspace.sideBar.position === 0)
                                 _workspace.sideBar.open()
 
@@ -475,77 +469,87 @@ Maui.ApplicationWindow
                         Layout.fillHeight: true
                         clip: true
 
-                        CollectionsView
-                        {
-                            id: _collectionsView
-                            anchors.fill: parent
-                            visible: _libraryTabs.currentIndex === 0
-                            useInternalChrome: false
-                        }
-
-                        TagsView
-                        {
-                            id: _tagsView
-                            anchors.fill: parent
-                            visible: _libraryTabs.currentIndex === 1
-                            useInternalChrome: false
-                        }
-
-                        ColumnLayout
+                        Item
                         {
                             anchors.fill: parent
-                            visible: _libraryTabs.currentIndex === 2
-                            spacing: 0
 
-                            RowLayout
+                            CollectionsView
                             {
-                                Layout.fillWidth: true
-                                Layout.leftMargin: Maui.Style.space.small
-                                Layout.rightMargin: Maui.Style.space.small
-                                Layout.topMargin: Maui.Style.space.small
+                                id: _collectionsView
+                                anchors.fill: parent
+                                useInternalChrome: false
+                                opacity: collectionsActive ? 1 : 0
+                                enabled: collectionsActive
+                                z: collectionsActive ? 2 : 0
+                            }
 
-                                Item
+                            TagsView
+                            {
+                                id: _tagsView
+                                anchors.fill: parent
+                                useInternalChrome: false
+                                opacity: tagsActive ? 1 : 0
+                                enabled: tagsActive
+                                z: tagsActive ? 2 : 0
+                            }
+
+                            ColumnLayout
+                            {
+                                anchors.fill: parent
+                                visible: playlistActive
+                                spacing: 0
+
+                                RowLayout
                                 {
                                     Layout.fillWidth: true
+                                    Layout.leftMargin: Maui.Style.space.small
+                                    Layout.rightMargin: Maui.Style.space.small
+                                    Layout.topMargin: Maui.Style.space.small
+
+                                    Item
+                                    {
+                                        Layout.fillWidth: true
+                                    }
+
+                                    ToolButton
+                                    {
+                                        visible: _playlist.list.count > 0
+                                        icon.name: "edit-clear"
+                                        text: i18n("Clear")
+                                        display: AbstractButton.TextBesideIcon
+                                        onClicked: clearQueue()
+                                    }
                                 }
 
-                                ToolButton
+                                Playlist
                                 {
-                                    visible: _playlist.list.count > 0
-                                    icon.name: "edit-clear"
-                                    text: i18n("Clear")
-                                    display: AbstractButton.TextBesideIcon
-                                    onClicked: clearQueue()
+                                    id: _playlist
+                                    Layout.fillWidth: true
+                                    Layout.fillHeight: true
                                 }
-                            }
-
-                            Playlist
-                            {
-                                id: _playlist
-                                Layout.fillWidth: true
-                                Layout.fillHeight: true
                             }
                         }
+
                     }
 
                     ToolSeparator
                     {
-                        visible: !playlistActive
+                        visible: collectionsActive || tagsActive
                         Layout.fillWidth: true
                     }
 
                     RowLayout
                     {
-                        visible: !playlistActive
+                        visible: collectionsActive
                         Layout.fillWidth: true
                         Layout.margins: Maui.Style.space.small
-                        Layout.preferredHeight: _toolbarSearchField.implicitHeight
-                        Layout.maximumHeight: _toolbarSearchField.implicitHeight
+                        Layout.preferredHeight: _librarySearchField.implicitHeight
+                        Layout.maximumHeight: _librarySearchField.implicitHeight
                         spacing: Maui.Style.space.small
 
                         ToolButton
                         {
-                            visible: shellBackVisible
+                            visible: collectionsFolderActive
                             Layout.alignment: Qt.AlignVCenter
                             icon.name: "go-previous"
                             onClicked: handleToolbarBack()
@@ -553,7 +557,7 @@ Maui.ApplicationWindow
 
                         ToolSeparator
                         {
-                            visible: shellBackVisible
+                            visible: collectionsFolderActive
                             Layout.alignment: Qt.AlignVCenter
                             bottomPadding: 10
                             topPadding: 10
@@ -561,20 +565,19 @@ Maui.ApplicationWindow
 
                         Maui.SearchField
                         {
-                            id: _toolbarSearchField
-                            enabled: parent.visible
+                            id: _librarySearchField
                             Layout.fillWidth: true
                             Layout.alignment: Qt.AlignVCenter
-                            placeholderText: browserSearchPlaceholder
+                            placeholderText: collectionsFolderActive ? i18n("Search videos") : i18n("Search library")
                             onTextChanged:
                             {
-                                if (!suppressToolbarSearchCallbacks && !playlistActive && currentRoute && currentRoute.search)
-                                    currentRoute.search(text)
+                                if (!suppressToolbarSearchCallbacks)
+                                    _collectionsView.search(text)
                             }
                             onCleared:
                             {
-                                if (!suppressToolbarSearchCallbacks && !playlistActive && currentRoute && currentRoute.clearSearch)
-                                    currentRoute.clearSearch()
+                                if (!suppressToolbarSearchCallbacks)
+                                    _collectionsView.clearSearch()
                             }
                             Keys.priority: Keys.AfterItem
                             Keys.onReturnPressed: event.accepted = true
@@ -582,7 +585,7 @@ Maui.ApplicationWindow
 
                         ToolSeparator
                         {
-                            visible: browserSortVisible || tagsGridActive
+                            visible: collectionsFolderActive
                             Layout.alignment: Qt.AlignVCenter
                             bottomPadding: 10
                             topPadding: 10
@@ -590,66 +593,7 @@ Maui.ApplicationWindow
 
                         Maui.ToolButtonMenu
                         {
-                            visible: tagsGridActive
-                            Layout.alignment: Qt.AlignVCenter
-                            icon.name: "view-sort"
-
-                            MenuItem
-                            {
-                                text: i18n("Name (A-Z)")
-                                checkable: true
-                                autoExclusive: true
-                                checked: currentRoute && typeof currentRoute.currentSortIndex === "function" && currentRoute.currentSortIndex() === 0
-                                onTriggered:
-                                {
-                                    if (currentRoute && currentRoute.applySort)
-                                        currentRoute.applySort(0)
-                                }
-                            }
-
-                            MenuItem
-                            {
-                                text: i18n("Name (Z-A)")
-                                checkable: true
-                                autoExclusive: true
-                                checked: currentRoute && typeof currentRoute.currentSortIndex === "function" && currentRoute.currentSortIndex() === 1
-                                onTriggered:
-                                {
-                                    if (currentRoute && currentRoute.applySort)
-                                        currentRoute.applySort(1)
-                                }
-                            }
-
-                            MenuItem
-                            {
-                                text: i18n("Date (Newest)")
-                                checkable: true
-                                autoExclusive: true
-                                checked: currentRoute && typeof currentRoute.currentSortIndex === "function" && currentRoute.currentSortIndex() === 2
-                                onTriggered:
-                                {
-                                    if (currentRoute && currentRoute.applySort)
-                                        currentRoute.applySort(2)
-                                }
-                            }
-
-                            MenuItem
-                            {
-                                text: i18n("Date (Oldest)")
-                                checkable: true
-                                autoExclusive: true
-                                checked: currentRoute && typeof currentRoute.currentSortIndex === "function" && currentRoute.currentSortIndex() === 3
-                                onTriggered:
-                                {
-                                    if (currentRoute && currentRoute.applySort)
-                                        currentRoute.applySort(3)
-                                }
-                            }
-                        }
-
-                        Maui.ToolButtonMenu
-                        {
-                            visible: browserSortVisible
+                            visible: collectionsFolderActive
                             Layout.alignment: Qt.AlignVCenter
                             icon.name: "view-sort"
 
@@ -745,6 +689,103 @@ Maui.ApplicationWindow
                             }
                         }
                     }
+
+                    RowLayout
+                    {
+                        visible: tagsActive
+                        Layout.fillWidth: true
+                        Layout.margins: Maui.Style.space.small
+                        Layout.preferredHeight: _tagsSearchField.implicitHeight
+                        Layout.maximumHeight: _tagsSearchField.implicitHeight
+                        spacing: Maui.Style.space.small
+
+                        ToolButton
+                        {
+                            visible: tagsFilterActive
+                            Layout.alignment: Qt.AlignVCenter
+                            icon.name: "go-previous"
+                            onClicked: handleToolbarBack()
+                        }
+
+                        ToolSeparator
+                        {
+                            visible: tagsFilterActive
+                            Layout.alignment: Qt.AlignVCenter
+                            bottomPadding: 10
+                            topPadding: 10
+                        }
+
+                        Maui.SearchField
+                        {
+                            id: _tagsSearchField
+                            Layout.fillWidth: true
+                            Layout.alignment: Qt.AlignVCenter
+                            placeholderText: tagsFilterActive ? i18n("Search videos") : i18n("Search tags")
+                            onTextChanged:
+                            {
+                                if (!suppressToolbarSearchCallbacks)
+                                    _tagsView.search(text)
+                            }
+                            onCleared:
+                            {
+                                if (!suppressToolbarSearchCallbacks)
+                                    _tagsView.clearSearch()
+                            }
+                            Keys.priority: Keys.AfterItem
+                            Keys.onReturnPressed: event.accepted = true
+                        }
+
+                        ToolSeparator
+                        {
+                            visible: tagsGridActive
+                            Layout.alignment: Qt.AlignVCenter
+                            bottomPadding: 10
+                            topPadding: 10
+                        }
+
+                        Maui.ToolButtonMenu
+                        {
+                            visible: tagsGridActive
+                            Layout.alignment: Qt.AlignVCenter
+                            icon.name: "view-sort"
+
+                            MenuItem
+                            {
+                                text: i18n("Name (A-Z)")
+                                checkable: true
+                                autoExclusive: true
+                                checked: typeof _tagsView.currentSortIndex === "function" && _tagsView.currentSortIndex() === 0
+                                onTriggered: _tagsView.applySort(0)
+                            }
+
+                            MenuItem
+                            {
+                                text: i18n("Name (Z-A)")
+                                checkable: true
+                                autoExclusive: true
+                                checked: typeof _tagsView.currentSortIndex === "function" && _tagsView.currentSortIndex() === 1
+                                onTriggered: _tagsView.applySort(1)
+                            }
+
+                            MenuItem
+                            {
+                                text: i18n("Date (Newest)")
+                                checkable: true
+                                autoExclusive: true
+                                checked: typeof _tagsView.currentSortIndex === "function" && _tagsView.currentSortIndex() === 2
+                                onTriggered: _tagsView.applySort(2)
+                            }
+
+                            MenuItem
+                            {
+                                text: i18n("Date (Oldest)")
+                                checkable: true
+                                autoExclusive: true
+                                checked: typeof _tagsView.currentSortIndex === "function" && _tagsView.currentSortIndex() === 3
+                                onTriggered: _tagsView.applySort(3)
+                            }
+                        }
+                    }
                 }
             }
 
@@ -829,7 +870,7 @@ Maui.ApplicationWindow
                         {
                             Layout.fillWidth: true
                             Layout.fillHeight: true
-                            onDoubleClicked: player.seek(player.position - 5)
+                            onDoubleClicked: player.seek(player.position - 5000)
                         }
 
                         MouseArea
@@ -844,7 +885,7 @@ Maui.ApplicationWindow
                         {
                             Layout.fillWidth: true
                             Layout.fillHeight: true
-                            onDoubleClicked: player.seek(player.position + 5)
+                            onDoubleClicked: player.seek(player.position + 5000)
                         }
                     }
                 }
@@ -853,15 +894,15 @@ Maui.ApplicationWindow
                 {
                     id: _playerHolderLoader
                     anchors.fill: parent
-                    active: !_playerView.currentVideo.url || (_playerView.isStopped && _playerView.error !== MediaPlayer.NoError)
+                    active: !_playerView.currentVideo.url || (_playerView.isStopped && playbackHasError())
                     asynchronous: true
                     visible: active
                     sourceComponent: Maui.Holder
                     {
                         emoji: "media-playback-start"
                         title: i18n("Ready to Play")
-                        body: _playerView.error !== MediaPlayer.NoError
-                              ? _playerView.errorString
+                        body: playbackHasError()
+                              ? playbackErrorString()
                               : i18n("Open a file, add a URL, or choose something from your library to start watching.")
                     }
                 }
@@ -987,11 +1028,31 @@ Maui.ApplicationWindow
         }
     }
 
-    function resetToolbarSearch()
+    function searchFieldForIndex(index)
+    {
+        if (index === 0)
+            return _librarySearchField
+
+        if (index === 1)
+            return _tagsSearchField
+
+        return null
+    }
+
+    function resetSearchField(field)
     {
         suppressToolbarSearchCallbacks = true
-        _toolbarSearchField.text = ""
+
+        if (field)
+            field.text = ""
+
         suppressToolbarSearchCallbacks = false
+    }
+
+    function resetToolbarSearch(index)
+    {
+        const effectiveIndex = index === undefined ? _libraryTabs.currentIndex : index
+        resetSearchField(searchFieldForIndex(effectiveIndex))
     }
 
     function handleToolbarBack()
@@ -1005,17 +1066,8 @@ Maui.ApplicationWindow
 
     function showLibrarySection(index)
     {
-        const previousRoute = currentRoute
-        const hadSearchText = _toolbarSearchField.text.length > 0
-
-        if (hadSearchText && previousRoute && previousRoute.clearSearch)
-            previousRoute.clearSearch()
-
         if (_libraryTabs.currentIndex !== index)
             _libraryTabs.currentIndex = index
-
-        if (hadSearchText)
-            resetToolbarSearch()
 
         if (_workspace.sideBar.position === 0)
             _workspace.sideBar.open()
@@ -1031,19 +1083,16 @@ Maui.ApplicationWindow
 
     function showCollections()
     {
-        resetToolbarSearch()
         showLibrarySection(0)
     }
 
     function showTags()
     {
-        resetToolbarSearch()
         showLibrarySection(1)
     }
 
     function showQueue()
     {
-        resetToolbarSearch()
         showLibrarySection(2)
     }
 
@@ -1212,6 +1261,16 @@ Maui.ApplicationWindow
             return "\uf027"
 
         return "\uf028"
+    }
+
+    function playbackHasError()
+    {
+        return !!(_playerView && _playerView.hasError)
+    }
+
+    function playbackErrorString()
+    {
+        return playbackHasError() ? _playerView.lastErrorString : ""
     }
 
     function indexOfQueuedItem(url)

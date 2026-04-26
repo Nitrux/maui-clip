@@ -34,12 +34,28 @@ StackView
             showTitle: false
             title: control.currentTag
             background: null
-            list.urls: ["tags:///" + currentTag]
             list.recursive: false
+            listView.cacheBuffer: Math.max(height * 2, Maui.Style.units.gridUnit * 24)
+            listView.flickable.reuseItems: true
             holder.title: i18n("No Videos!")
             holder.body: i18n("There are no videos associated with this tag.")
 
             onItemClicked: play(item)
+
+            Component.onCompleted: syncTagSource()
+            onTitleChanged: syncTagSource()
+
+            function syncTagSource()
+            {
+                const nextUrl = control.currentTag.length ? "tags:///" + control.currentTag : ""
+                const currentUrls = list.urls
+
+                if (currentUrls.length === (nextUrl ? 1 : 0)
+                        && (!nextUrl || currentUrls[0] === nextUrl))
+                    return
+
+                list.urls = nextUrl ? [nextUrl] : []
+            }
         }
     }
 

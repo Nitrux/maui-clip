@@ -14,6 +14,10 @@ MpvObject
     property alias url : control.source
     property alias video : control
     property alias playerVolume : control.volume
+    property int fillMode: VideoOutput.PreserveAspectFit
+    readonly property bool supportsFillMode: false
+    property bool hasError: false
+    property string lastErrorString: ""
 
     readonly property bool isPlaying : control.playbackState === MediaPlayer.PlayingState
     readonly property bool isPaused : control.playbackState === MediaPlayer.PausedState
@@ -22,6 +26,21 @@ MpvObject
     autoPlay: true
     hardwareDecoding: settings.hardwareDecoding
     onEndOfFile: playNext()
+    onError: (message) =>
+    {
+        hasError = true
+        lastErrorString = message
+    }
+    onFileLoaded:
+    {
+        hasError = false
+        lastErrorString = ""
+    }
+    onSourceChanged:
+    {
+        hasError = false
+        lastErrorString = ""
+    }
 
     Maui.InfoDialog
     {
@@ -60,6 +79,4 @@ MpvObject
     }
 
 }
-
-
 

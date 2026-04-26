@@ -7,6 +7,9 @@ Video
     readonly property alias video : control
     property alias url : control.source
     property int playerVolume: Math.round(Number(control.volume || 0) * 100)
+    readonly property bool supportsFillMode: true
+    readonly property bool hasError: control.error !== MediaPlayer.NoError
+    readonly property string lastErrorString: control.errorString || ""
 
     readonly property bool isPlaying : control.playbackState === MediaPlayer.PlayingState
     readonly property bool isPaused : control.playbackState === MediaPlayer.PausedState

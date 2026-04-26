@@ -343,8 +343,9 @@ Maui.Page
             allowLassoSelection: false
             showTitle: false
             headBar.visible: false
-            list.urls: currentFolder.length ? [currentFolder] : []
             list.recursive: false
+            listView.cacheBuffer: Math.max(height * 2, Maui.Style.units.gridUnit * 24)
+            listView.flickable.reuseItems: true
 
             holder.title: i18n("No Videos!")
             holder.body: i18n("There are no videos in this collection.")
@@ -379,6 +380,21 @@ Maui.Page
             }
 
             onItemClicked: play(item)
+
+            Component.onCompleted: syncFolderSource()
+            onCurrentFolderChanged: syncFolderSource()
+
+            function syncFolderSource()
+            {
+                const nextUrls = currentFolder.length ? [currentFolder] : []
+                const currentUrls = list.urls
+
+                if (currentUrls.length === nextUrls.length
+                        && (currentUrls.length === 0 || currentUrls[0] === nextUrls[0]))
+                    return
+
+                list.urls = nextUrls
+            }
         }
     }
 

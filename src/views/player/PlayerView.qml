@@ -5,8 +5,9 @@ import QtQuick.Layouts
 import QtQuick.Controls
 
 import org.mauikit.controls as Maui
+import org.maui.clip as Clip
 
-Player
+Clip.Video
 {
     id: control
     // source: currentVideo.url

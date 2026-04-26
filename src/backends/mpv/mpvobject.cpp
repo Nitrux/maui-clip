@@ -498,7 +498,6 @@ void MpvObject::eventHandler()
                         else
                         {
                             Q_EMIT this->playing();
-                            Q_EMIT this->stopped();
                             setStatus(QMediaPlayer::LoadedMedia);
                         }
                     }
