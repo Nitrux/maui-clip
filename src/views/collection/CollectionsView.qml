@@ -272,6 +272,8 @@ Maui.Page
                 flickable.reuseItems: true
 
                 holder.visible: count === 0
+                holder.label1.width: Math.min(width - (Maui.Style.space.big * 2), Maui.Style.units.gridUnit * 12)
+                holder.label2.width: holder.label1.width
                 holder.emoji: "folder-videos"
                 holder.title: i18n("No Sources!")
                 holder.body: i18n("Add a video source from Settings to browse collections.")

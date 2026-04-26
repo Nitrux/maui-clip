@@ -1297,7 +1297,7 @@ Maui.ApplicationWindow
                         title: i18n("Ready to Play")
                         body: playbackHasError()
                               ? playbackErrorString()
-                              : i18n("Open a file, add a URL, or choose something from your library to start watching.")
+                              : i18n("Choose something from your library to start watching.")
                     }
                 }
 

@@ -20,7 +20,8 @@ Maui.AltBrowser
     headBar.visible: useInternalChrome
     headBar.forceCenterMiddleContent: root.isWide
     holder.visible: _tagsList.count === 0
-    holder.emojiSize: Maui.Style.iconSizes.huge
+    holder.label1.width: Math.min(width - (Maui.Style.space.big * 2), Maui.Style.units.gridUnit * 12)
+    holder.label2.width: holder.label1.width
     holder.emoji: "tag"
     holder.title: i18n("No Tags!")
     holder.body: i18n("Add a new tag to start organizing your video collection.")

@@ -17,6 +17,8 @@ Maui.ListBrowser
     clip: true
 
     holder.visible: list.count === 0
+    holder.label1.width: Math.min(width - (Maui.Style.space.big * 2), Maui.Style.units.gridUnit * 12)
+    holder.label2.width: holder.label1.width
     holder.emoji: "media-playlist-append"
     holder.title: i18n("Playlist is Empty")
     holder.body: i18n("Play videos from your library to build a playlist.")
