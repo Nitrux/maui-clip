@@ -28,6 +28,11 @@ Maui.ApplicationWindow
     property bool selectionMode: false
     property int lastAudibleVolume: 100
     property bool suppressToolbarSearchCallbacks: false
+    property var shuffledPlaybackHistory: []
+    property int shuffledPlaybackHistoryPosition: -1
+    readonly property int replayModeOff: 0
+    readonly property int replayModeOne: 1
+    readonly property int replayModeAll: 2
 
     readonly property alias player: _playerView
     readonly property alias selectionBar: _selectionBar
@@ -111,6 +116,8 @@ Maui.ApplicationWindow
         property int sortOrder: Qt.DescendingOrder
         property bool hardwareDecoding: true
         property bool hidePlayerChromeInFullScreen: false
+        property bool shufflePlayback: false
+        property int replayMode: 0
         property string subtitlesPath
         property font font
         property bool playerTagBar: true
@@ -1444,6 +1451,27 @@ Maui.ApplicationWindow
         }
     }
 
+    Connections
+    {
+        target: _playerView.player
+        ignoreUnknownSignals: true
+
+        function onEndOfFile()
+        {
+            handlePlaybackEnded()
+        }
+    }
+
+    Connections
+    {
+        target: settings
+
+        function onReplayModeChanged()
+        {
+            applyReplayModeToPlayer()
+        }
+    }
+
     function searchFieldForIndex(index)
     {
         if (index === 0)
@@ -1526,22 +1554,164 @@ Maui.ApplicationWindow
             root.showFullScreen()
     }
 
-    function playNext()
+    function currentQueuedVideoIsActive()
     {
-        if (_playlist.list.count > 0)
-        {
-            const next = _playerView.currentVideoIndex + 1 >= _playlist.list.count ? 0 : _playerView.currentVideoIndex + 1
-            playAt(next)
+        if (_playerView.currentVideoIndex < 0 || _playerView.currentVideoIndex >= _playlist.list.count)
+            return false
+
+        const currentQueuedItem = _playlist.model.get(_playerView.currentVideoIndex)
+        return !!currentQueuedItem && currentQueuedItem.url === _playerView.currentVideo.url
+    }
+
+    function resetShuffleHistory()
+    {
+        shuffledPlaybackHistory = []
+        shuffledPlaybackHistoryPosition = -1
+    }
+
+    function rememberShuffledPlayback(url)
+    {
+        if (!url)
+            return
+
+        let history = shuffledPlaybackHistory.slice()
+
+        if (shuffledPlaybackHistoryPosition < history.length - 1)
+            history = history.slice(0, shuffledPlaybackHistoryPosition + 1)
+
+        if (history.length === 0 || history[history.length - 1] !== url)
+            history.push(url)
+
+        shuffledPlaybackHistory = history
+        shuffledPlaybackHistoryPosition = history.length - 1
+    }
+
+    function randomQueuedIndex(excludedIndex)
+    {
+        if (_playlist.list.count <= 0)
+            return -1
+
+        if (_playlist.list.count === 1)
+            return 0
+
+        let nextIndex = excludedIndex
+
+        while (nextIndex === excludedIndex)
+            nextIndex = Math.floor(Math.random() * _playlist.list.count)
+
+        return nextIndex
+    }
+
+    function restartCurrentVideo()
+    {
+        if (!_playerView.currentVideo.url)
+            return false
+
+        if (_playerView.restart)
+            _playerView.restart()
+        else {
+            _playerView.seek(0)
+            _playerView.play()
         }
+
+        _playerPage.forceActiveFocus()
+        return true
+    }
+
+    function applyReplayModeToPlayer()
+    {
+        if (!_playerView || !_playerView.player || !_playerView.player.setProperty)
+            return
+
+        _playerView.player.setProperty("loop-file", settings.replayMode === replayModeOne ? "inf" : "no")
+    }
+
+    function handlePlaybackEnded()
+    {
+        if (!_playerView.currentVideo.url)
+            return
+
+        if (settings.replayMode === replayModeOne) {
+            applyReplayModeToPlayer()
+            return
+        }
+
+        if (!currentQueuedVideoIsActive())
+            return
+
+        const shouldWrap = settings.replayMode === replayModeAll
+
+        Qt.callLater(function()
+        {
+            if (!_playerView.currentVideo.url || !currentQueuedVideoIsActive())
+                return
+
+            const advanced = playNext({ wrap: shouldWrap })
+
+            if (!advanced && !shouldWrap && _playerView.stop)
+                _playerView.stop()
+        })
+    }
+
+    function playNext(options)
+    {
+        const playbackOptions = options || {}
+        const wrap = playbackOptions.wrap === undefined ? true : playbackOptions.wrap
+
+        if (!currentQueuedVideoIsActive())
+            return false
+
+        if (settings.shufflePlayback) {
+            if (_playlist.list.count === 1)
+                return wrap ? playAt(0) : false
+
+            const nextHistoryIndex = shuffledPlaybackHistoryPosition + 1
+
+            if (nextHistoryIndex >= 0 && nextHistoryIndex < shuffledPlaybackHistory.length) {
+                const nextHistoryItemIndex = indexOfQueuedItem(shuffledPlaybackHistory[nextHistoryIndex])
+
+                if (nextHistoryItemIndex >= 0) {
+                    shuffledPlaybackHistoryPosition = nextHistoryIndex
+                    return playAt(nextHistoryItemIndex, { skipHistory: true })
+                }
+            }
+
+            return playAt(randomQueuedIndex(_playerView.currentVideoIndex))
+        }
+
+        const nextIndex = _playerView.currentVideoIndex + 1
+
+        if (nextIndex < _playlist.list.count)
+            return playAt(nextIndex)
+
+        if (wrap)
+            return playAt(0)
+
+        return false
     }
 
     function playPrevious()
     {
-        if (_playlist.list.count > 0)
-        {
-            const previous = _playerView.currentVideoIndex - 1 >= 0 ? _playerView.currentVideoIndex - 1 : _playlist.list.count - 1
-            playAt(previous)
+        if (!currentQueuedVideoIsActive())
+            return false
+
+        if (settings.shufflePlayback) {
+            const previousHistoryIndex = shuffledPlaybackHistoryPosition - 1
+
+            if (previousHistoryIndex >= 0) {
+                const previousHistoryItemIndex = indexOfQueuedItem(shuffledPlaybackHistory[previousHistoryIndex])
+
+                if (previousHistoryItemIndex >= 0) {
+                    shuffledPlaybackHistoryPosition = previousHistoryIndex
+                    return playAt(previousHistoryItemIndex, { skipHistory: true })
+                }
+            }
+
+            return playAt(randomQueuedIndex(_playerView.currentVideoIndex))
         }
+
+        const previousIndex = _playerView.currentVideoIndex - 1 >= 0 ? _playerView.currentVideoIndex - 1 : _playlist.list.count - 1
+        return playAt(previousIndex)
     }
 
     function play(item)
@@ -1557,20 +1727,32 @@ Maui.ApplicationWindow
         playAt(_playlist.list.count - 1)
     }
 
-    function playAt(index)
+    function playAt(index, options)
     {
+        const playbackOptions = options || {}
+
         if ((index < _playlist.list.count) && (index > -1))
         {
-            _playerView.currentVideoIndex = index
-            _playerView.currentVideo = _playlist.model.get(index)
+            const queuedItem = _playlist.model.get(index)
 
+            if (!playbackOptions.skipHistory && queuedItem && queuedItem.url)
+                rememberShuffledPlayback(queuedItem.url)
+
+            _playerView.currentVideoIndex = index
+            _playerView.currentVideo = queuedItem
+
+            applyReplayModeToPlayer()
             _playerView.play()
             _playerPage.forceActiveFocus()
+            return true
         }
+
+        return false
     }
 
     function playItems(items)
     {
+        resetShuffleHistory()
         _playlist.list.clear()
 
         for (var item of items)
@@ -1607,6 +1789,7 @@ Maui.ApplicationWindow
 
     function clearQueue()
     {
+        resetShuffleHistory()
         _playlist.list.clear()
         stopPlayback()
     }
@@ -1740,9 +1923,11 @@ Maui.ApplicationWindow
         if (!url || url.length === 0)
             return
 
+        resetShuffleHistory()
         _playerView.currentVideoIndex = -1
         _playerView.currentVideo = ({ label: url, url: url, preview: "" })
 
+        applyReplayModeToPlayer()
         _playerView.play()
         _playerPage.forceActiveFocus()
     }

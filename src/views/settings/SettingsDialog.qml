@@ -41,6 +41,37 @@ Maui.SettingsDialog
                 onToggled: settings.hidePlayerChromeInFullScreen = !settings.hidePlayerChromeInFullScreen
             }
         }
+
+        Maui.FlexSectionItem
+        {
+            label1.text: i18n("Shuffle Playback")
+            label2.text: i18n("Play a random queued video when moving forward or backward through the playlist.")
+
+            Switch
+            {
+                checkable: true
+                checked: settings.shufflePlayback
+                onToggled: settings.shufflePlayback = checked
+            }
+        }
+
+        Maui.FlexSectionItem
+        {
+            label1.text: i18n("Replay")
+            label2.text: i18n("Choose what happens after the current video finishes.")
+
+            ComboBox
+            {
+                implicitWidth: Math.max(Maui.Style.units.gridUnit * 7, contentItem.implicitWidth + leftPadding + rightPadding)
+                model: [
+                    i18n("Off"),
+                    i18n("Replay One"),
+                    i18n("Replay All")
+                ]
+                currentIndex: settings.replayMode
+                onActivated: (index) => settings.replayMode = index
+            }
+        }
     }
 
     Maui.SectionGroup

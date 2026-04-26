@@ -425,6 +425,7 @@ void MpvObject::eventHandler()
         switch (event->event_id) {
 
         case MPV_EVENT_START_FILE:
+            m_eofTransitionInProgress = false;
             //               clearTrackState();
             //               Q_EMIT sourceChanged();
             setStatus(QMediaPlayer::LoadingMedia);
@@ -435,6 +436,7 @@ void MpvObject::eventHandler()
             break;
 
         case MPV_EVENT_PLAYBACK_RESTART: {
+            m_eofTransitionInProgress = false;
             bool paused = this->getProperty("pause").toBool();
             if (paused)
                 Q_EMIT this->paused();
@@ -444,6 +446,7 @@ void MpvObject::eventHandler()
         }
 
         case MPV_EVENT_FILE_LOADED: {
+            m_eofTransitionInProgress = false;
             Q_EMIT fileLoaded();
             setStatus(QMediaPlayer::LoadedMedia);
             Q_EMIT this->playing();
@@ -452,10 +455,13 @@ void MpvObject::eventHandler()
 
         case MPV_EVENT_END_FILE: {
             auto prop = (mpv_event_end_file *)event->data;
-            if (prop->reason == MPV_END_FILE_REASON_EOF ||
-                    prop ->reason == MPV_END_FILE_REASON_ERROR) {
-                Q_EMIT endOfFile();
+            if (prop->reason == MPV_END_FILE_REASON_EOF) {
+                m_eofTransitionInProgress = true;
                 setStatus(QMediaPlayer::EndOfMedia);
+                Q_EMIT endOfFile();
+            } else if (prop ->reason == MPV_END_FILE_REASON_ERROR) {
+                Q_EMIT endOfFile();
+                setStatus(QMediaPlayer::InvalidMedia);
                 Q_EMIT this->stopped();
             }
             break;
@@ -493,11 +499,14 @@ void MpvObject::eventHandler()
                     else {
                         if(this->getProperty("core-idle").toBool())
                         {
-                            Q_EMIT this->stopped();
-                            setStatus(QMediaPlayer::NoMedia);
+                            if (!m_eofTransitionInProgress) {
+                                Q_EMIT this->stopped();
+                                setStatus(QMediaPlayer::NoMedia);
+                            }
                         }
                         else
                         {
+                            m_eofTransitionInProgress = false;
                             Q_EMIT this->playing();
                             setStatus(QMediaPlayer::LoadedMedia);
                         }
@@ -631,6 +640,7 @@ void MpvObject::play()
 
 void MpvObject::stop()
 {
+    m_eofTransitionInProgress = false;
     this->command(QStringList () << "stop" << "");
     Q_EMIT this->stopped();
 }
@@ -638,6 +648,13 @@ void MpvObject::stop()
 void MpvObject::pause()
 {
     this->setProperty("pause", true);
+}
+
+void MpvObject::restart()
+{
+    m_secondsWatched.clear();
+    setWatchPercentage(0);
+    playUrl();
 }
 
 void MpvObject::seek(const double &value)
@@ -750,6 +767,8 @@ bool MpvObject::hardwareDecoding() const
 
 void MpvObject::playUrl()
 {
+    m_eofTransitionInProgress = false;
+
     if(!m_source.isEmpty() && m_source.isValid())
     {
         qDebug() << "request play file" << m_source;

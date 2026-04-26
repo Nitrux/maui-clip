@@ -28,7 +28,6 @@ MpvObject
     Component.onCompleted: applyFillMode()
     autoPlay: true
     hardwareDecoding: settings.hardwareDecoding
-    onEndOfFile: playNext()
     onFillModeChanged: applyFillMode()
     onError: (message) =>
     {

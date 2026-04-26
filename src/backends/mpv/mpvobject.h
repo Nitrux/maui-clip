@@ -204,6 +204,7 @@ public Q_SLOTS:
     void play();
     void stop();
     void pause();
+    void restart();
 
     void seek(const double &value);
 
@@ -271,6 +272,7 @@ private:
     QMediaPlayer::PlaybackState m_playbackState;
     QMediaPlayer::MediaStatus  m_status = QMediaPlayer::NoMedia;
     bool m_hardwareDecoding = true;
+    bool m_eofTransitionInProgress = false;
 };
 
 class MpvRenderer : public QQuickFramebufferObject::Renderer
