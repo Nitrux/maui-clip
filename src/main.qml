@@ -362,13 +362,15 @@ Maui.ApplicationWindow
                 MenuSeparator
                 {
                     visible: trackOptionsVisible
-                    height: visible ? implicitHeight : 0
+                    implicitHeight: visible ? 1 + (Maui.Style.space.tiny * 2) : 0
+                    height: implicitHeight
                 }
 
                 MenuItem
                 {
                     visible: _playerView.hasSubtitleTracks
-                    height: visible ? implicitHeight : 0
+                    implicitHeight: visible ? contentItem.implicitHeight + topPadding + bottomPadding : 0
+                    height: implicitHeight
                     text: i18n("Subtitles")
                     onTriggered: _playerView.openSubtitlesDialog()
                 }
@@ -376,7 +378,8 @@ Maui.ApplicationWindow
                 MenuItem
                 {
                     visible: _playerView.hasAudioTracks
-                    height: visible ? implicitHeight : 0
+                    implicitHeight: visible ? contentItem.implicitHeight + topPadding + bottomPadding : 0
+                    height: implicitHeight
                     text: i18n("Audio Tracks")
                     onTriggered: _playerView.openAudioTracksDialog()
                 }
@@ -411,23 +414,30 @@ Maui.ApplicationWindow
         {
             id: _workspace
             anchors.fill: parent
-            anchors.topMargin: _shellPage.headBar.height + Maui.Style.space.small
             background: null
             Maui.Theme.colorSet: Maui.Theme.View
+            readonly property real topChromeOffset: _shellPage.headBar.height + Maui.Style.space.small
             sideBar.preferredWidth: Math.min(root.width * (root.height > root.width ? 0.84 : 0.38), Maui.Style.units.gridUnit * 24)
             sideBar.minimumWidth: Maui.Style.units.gridUnit * 14
             sideBar.maximumWidth: Maui.Style.units.gridUnit * 30
             sideBar.collapsed: root.height > root.width || root.width < Maui.Style.units.gridUnit * 42
             sideBar.autoShow: true
             sideBar.autoHide: true
-            sideBar.floats: sideBar.collapsed
+            sideBar.floats: true
+            sideBar.height: Math.max(0, _workspace.height - _playerPage.footBar.height - Maui.Style.space.small)
 
             sideBarContent: Maui.Page
             {
                 id: _libraryPanel
                 readonly property int panelMargin: Maui.Handy.isMobile ? Maui.Style.space.medium : Maui.Style.contentMargins
-                anchors.fill: parent
-                anchors.margins: panelMargin
+                anchors.top: parent.top
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.bottom: parent.bottom
+                anchors.leftMargin: panelMargin
+                anchors.rightMargin: panelMargin
+                anchors.bottomMargin: panelMargin
+                anchors.topMargin: panelMargin + _workspace.topChromeOffset
                 background: Rectangle
                 {
                     clip: true
@@ -904,7 +914,16 @@ Maui.ApplicationWindow
                         {
                             Layout.fillWidth: true
                             Layout.fillHeight: true
-                            onClicked: player.playbackState === MediaPlayer.PlayingState ? player.pause() : player.play()
+                            onClicked:
+                            {
+                                if (player.playbackState === MediaPlayer.PlayingState) {
+                                    player.pause()
+                                    _playbackStateOverlay.showPause()
+                                } else {
+                                    player.play()
+                                    _playbackStateOverlay.showPlay()
+                                }
+                            }
                             onDoubleClicked: root.toggleFullScreen()
                         }
 
@@ -934,8 +953,8 @@ Maui.ApplicationWindow
                         height: width
                         radius: width / 2
                         anchors.verticalCenter: parent.verticalCenter
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        anchors.horizontalCenterOffset: -Math.min(parent.width * 0.4, Maui.Style.units.gridUnit * 16)
+                        anchors.left: parent.left
+                        anchors.leftMargin: Math.max(parent.width * 0.08, Maui.Style.units.gridUnit * 2)
                         color: Qt.rgba(0.08, 0.09, 0.15, 0.68)
                         border.color: Qt.rgba(1, 1, 1, 0.12)
                         border.width: 1
@@ -1037,8 +1056,8 @@ Maui.ApplicationWindow
                         height: width
                         radius: width / 2
                         anchors.verticalCenter: parent.verticalCenter
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        anchors.horizontalCenterOffset: Math.min(parent.width * 0.4, Maui.Style.units.gridUnit * 16)
+                        anchors.right: parent.right
+                        anchors.rightMargin: Math.max(parent.width * 0.08, Maui.Style.units.gridUnit * 2)
                         color: Qt.rgba(0.08, 0.09, 0.15, 0.68)
                         border.color: Qt.rgba(1, 1, 1, 0.12)
                         border.width: 1
@@ -1130,6 +1149,123 @@ Maui.ApplicationWindow
                             scale = 0.84
                             _seekForwardOpacityAnimation.restart()
                             _seekForwardScaleAnimation.restart()
+                        }
+                    }
+
+                    Rectangle
+                    {
+                        id: _playbackStateOverlay
+                        property string iconGlyph: "\uf04b"
+                        property string statusText: i18n("Play")
+                        width: Math.min(parent.width * 0.14, Maui.Style.units.gridUnit * 6)
+                        height: width
+                        radius: width / 2
+                        anchors.centerIn: parent
+                        color: Qt.rgba(0.08, 0.09, 0.15, 0.72)
+                        border.color: Qt.rgba(1, 1, 1, 0.12)
+                        border.width: 1
+                        opacity: 0
+                        scale: 0.84
+                        visible: opacity > 0
+
+                        Column
+                        {
+                            anchors.centerIn: parent
+                            spacing: Maui.Style.space.tiny
+
+                            Label
+                            {
+                                anchors.horizontalCenter: parent.horizontalCenter
+                                text: _playbackStateOverlay.iconGlyph
+                                font.family: "Font Awesome 6 Free Solid"
+                                font.pixelSize: Maui.Style.fontSizes.big
+                                font.weight: Font.Black
+                                color: "white"
+                                horizontalAlignment: Text.AlignHCenter
+                            }
+
+                            Label
+                            {
+                                anchors.horizontalCenter: parent.horizontalCenter
+                                text: _playbackStateOverlay.statusText
+                                font.pixelSize: Maui.Style.fontSizes.small
+                                font.weight: Font.DemiBold
+                                color: "white"
+                                horizontalAlignment: Text.AlignHCenter
+                            }
+                        }
+
+                        SequentialAnimation on opacity
+                        {
+                            id: _playbackStateOpacityAnimation
+                            running: false
+
+                            NumberAnimation
+                            {
+                                to: 1
+                                duration: 110
+                                easing.type: Easing.OutQuad
+                            }
+
+                            PauseAnimation
+                            {
+                                duration: 220
+                            }
+
+                            NumberAnimation
+                            {
+                                to: 0
+                                duration: 180
+                                easing.type: Easing.InQuad
+                            }
+                        }
+
+                        SequentialAnimation on scale
+                        {
+                            id: _playbackStateScaleAnimation
+                            running: false
+
+                            NumberAnimation
+                            {
+                                to: 1
+                                duration: 150
+                                easing.type: Easing.OutBack
+                                easing.overshoot: 1.06
+                            }
+
+                            PauseAnimation
+                            {
+                                duration: 180
+                            }
+
+                            NumberAnimation
+                            {
+                                to: 0.9
+                                duration: 180
+                                easing.type: Easing.InQuad
+                            }
+                        }
+
+                        function restart()
+                        {
+                            opacity = 0
+                            scale = 0.84
+                            _playbackStateOpacityAnimation.restart()
+                            _playbackStateScaleAnimation.restart()
+                        }
+
+                        function showPlay()
+                        {
+                            iconGlyph = "\uf04b"
+                            statusText = i18n("Play")
+                            restart()
+                        }
+
+                        function showPause()
+                        {
+                            iconGlyph = "\uf04c"
+                            statusText = i18n("Pause")
+                            restart()
                         }
                     }
                 }
