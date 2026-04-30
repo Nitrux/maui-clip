@@ -59,6 +59,32 @@ Maui.ApplicationWindow
                                                             || _fullScreenBottomRevealArea.containsMouse
     property real fullScreenPlaybackChromeOpacity: fullScreenPlaybackChromeVisible ? 1 : 0
 
+    function handleEscapeShortcut()
+    {
+        if (root.visibility === Window.FullScreen) {
+            root.showNormal()
+            return true
+        }
+
+        if (_workspace.sideBar.position > 0) {
+            _workspace.sideBar.close()
+
+            if (_playerView.currentVideo.url)
+                Qt.callLater(() => _playerPage.forceActiveFocus())
+            else if (currentRoute && currentRoute.forceActiveFocus)
+                Qt.callLater(() => currentRoute.forceActiveFocus())
+
+            return true
+        }
+
+        return false
+    }
+
+    Component.onCompleted:
+    {
+        Qt.callLater(() => _workspace.sideBar.close())
+    }
+
     Maui.WindowBlur
     {
         view: root
@@ -188,6 +214,15 @@ Maui.ApplicationWindow
 
     Component
     {
+        id: _shortcutsDialogComponent
+        ShortcutsDialog
+        {
+            onClosed: destroy()
+        }
+    }
+
+    Component
+    {
         id: _openUrlDialogComponent
         Maui.InputDialog
         {
@@ -257,6 +292,13 @@ Maui.ApplicationWindow
 
     Shortcut
     {
+        sequence: "Ctrl+/"
+        context: Qt.WindowShortcut
+        onActivated: openShortcutsDialog()
+    }
+
+    Shortcut
+    {
         sequence: "F11"
         context: Qt.WindowShortcut
         onActivated: toggleFullScreen()
@@ -266,8 +308,8 @@ Maui.ApplicationWindow
     {
         sequence: "Escape"
         context: Qt.WindowShortcut
-        enabled: root.visibility === Window.FullScreen
-        onActivated: root.showNormal()
+        enabled: root.visibility === Window.FullScreen || _workspace.sideBar.position > 0
+        onActivated: handleEscapeShortcut()
     }
 
     Maui.Page
@@ -409,6 +451,13 @@ Maui.ApplicationWindow
                 icon.name: "overflow-menu"
                 MenuItem
                 {
+                    text: i18n("Shortcuts")
+                    icon.name: "configure-shortcuts"
+                    onTriggered: openShortcutsDialog()
+                }
+
+                MenuItem
+                {
                     text: i18n("Settings")
                     icon.name: "settings-configure"
                     onTriggered: openSettingsDialog()
@@ -434,7 +483,7 @@ Maui.ApplicationWindow
             sideBar.minimumWidth: Maui.Style.units.gridUnit * 14
             sideBar.maximumWidth: Maui.Style.units.gridUnit * 30
             sideBar.collapsed: root.height > root.width || root.width < Maui.Style.units.gridUnit * 42
-            sideBar.autoShow: true
+            sideBar.autoShow: false
             sideBar.autoHide: true
             sideBar.floats: true
             sideBar.height: Math.max(0, _workspace.height - _playerPage.footBar.height - Maui.Style.space.small)
@@ -858,12 +907,16 @@ Maui.ApplicationWindow
                 Keys.enabled: !Maui.Handy.isMobile
                 Keys.onPressed: (event) =>
                 {
+                    if (event.key === Qt.Key_Escape && handleEscapeShortcut()) {
+                        event.accepted = true
+                        return
+                    }
+
                     if (event.modifiers & (Qt.ControlModifier | Qt.AltModifier | Qt.MetaModifier))
                         return
 
                     switch (event.key) {
                     case Qt.Key_Space:
-                    case Qt.Key_K:
                         togglePlayback()
                         break
                     case Qt.Key_Left:
@@ -886,9 +939,6 @@ Maui.ApplicationWindow
                         break
                     case Qt.Key_M:
                         toggleMute()
-                        break
-                    case Qt.Key_F:
-                        toggleFullScreen()
                         break
                     default:
                         return
@@ -919,7 +969,7 @@ Maui.ApplicationWindow
                             onDoubleClicked:
                             {
                                 seekBy(-5000)
-                                _seekBackwardOverlay.restart()
+                                _playerPage.forceActiveFocus()
                             }
                         }
 
@@ -929,15 +979,14 @@ Maui.ApplicationWindow
                             Layout.fillHeight: true
                             onClicked:
                             {
-                                if (player.playbackState === MediaPlayer.PlayingState) {
-                                    player.pause()
-                                    _playbackStateOverlay.showPause()
-                                } else {
-                                    startPlayback()
-                                    _playbackStateOverlay.showPlay()
-                                }
+                                togglePlayback()
+                                _playerPage.forceActiveFocus()
                             }
-                            onDoubleClicked: root.toggleFullScreen()
+                            onDoubleClicked:
+                            {
+                                root.toggleFullScreen()
+                                _playerPage.forceActiveFocus()
+                            }
                         }
 
                         MouseArea
@@ -947,7 +996,7 @@ Maui.ApplicationWindow
                             onDoubleClicked:
                             {
                                 seekBy(5000)
-                                _seekForwardOverlay.restart()
+                                _playerPage.forceActiveFocus()
                             }
                         }
                     }
@@ -962,6 +1011,7 @@ Maui.ApplicationWindow
                     Rectangle
                     {
                         id: _seekBackwardOverlay
+                        property string amountText: i18n("-5s")
                         width: Math.min(parent.width * 0.12, Maui.Style.units.gridUnit * 5)
                         height: width
                         radius: width / 2
@@ -994,7 +1044,7 @@ Maui.ApplicationWindow
                             Label
                             {
                                 anchors.horizontalCenter: parent.horizontalCenter
-                                text: i18n("-5s")
+                                text: _seekBackwardOverlay.amountText
                                 font.pixelSize: Maui.Style.fontSizes.small
                                 font.weight: Font.DemiBold
                                 color: "white"
@@ -1060,11 +1110,18 @@ Maui.ApplicationWindow
                             _seekBackwardOpacityAnimation.restart()
                             _seekBackwardScaleAnimation.restart()
                         }
+
+                        function show(text)
+                        {
+                            amountText = text
+                            restart()
+                        }
                     }
 
                     Rectangle
                     {
                         id: _seekForwardOverlay
+                        property string amountText: i18n("+5s")
                         width: Math.min(parent.width * 0.12, Maui.Style.units.gridUnit * 5)
                         height: width
                         radius: width / 2
@@ -1097,7 +1154,7 @@ Maui.ApplicationWindow
                             Label
                             {
                                 anchors.horizontalCenter: parent.horizontalCenter
-                                text: i18n("+5s")
+                                text: _seekForwardOverlay.amountText
                                 font.pixelSize: Maui.Style.fontSizes.small
                                 font.weight: Font.DemiBold
                                 color: "white"
@@ -1162,6 +1219,12 @@ Maui.ApplicationWindow
                             scale = 0.84
                             _seekForwardOpacityAnimation.restart()
                             _seekForwardScaleAnimation.restart()
+                        }
+
+                        function show(text)
+                        {
+                            amountText = text
+                            restart()
                         }
                     }
 
@@ -1574,13 +1637,17 @@ Maui.ApplicationWindow
 
     function showLibrarySection(index)
     {
+        const keepPlayerFocus = !!_playerView.currentVideo.url
+
         if (_libraryTabs.currentIndex !== index)
             _libraryTabs.currentIndex = index
 
         if (_workspace.sideBar.position === 0)
             _workspace.sideBar.open()
 
-        if (currentRoute && currentRoute.forceActiveFocus)
+        if (keepPlayerFocus)
+            Qt.callLater(() => _playerPage.forceActiveFocus())
+        else if (currentRoute && currentRoute.forceActiveFocus)
             Qt.callLater(() => currentRoute.forceActiveFocus())
     }
 
@@ -1958,15 +2025,37 @@ Maui.ApplicationWindow
         stopPlayback()
     }
 
+    function showPlaybackStateFeedback(isPlaying)
+    {
+        if (isPlaying)
+            _playbackStateOverlay.showPause()
+        else
+            _playbackStateOverlay.showPlay()
+    }
+
+    function showSeekFeedback(offset)
+    {
+        const seconds = Math.round(Math.abs(offset) / 1000)
+        const text = (offset < 0 ? "-" : "+") + seconds + "s"
+
+        if (offset < 0)
+            _seekBackwardOverlay.show(text)
+        else if (offset > 0)
+            _seekForwardOverlay.show(text)
+    }
+
     function togglePlayback()
     {
         if (!_playerView.currentVideo.url)
             return
 
-        if (player.playbackState === MediaPlayer.PlayingState)
+        if (player.playbackState === MediaPlayer.PlayingState) {
             player.pause()
-        else
+            showPlaybackStateFeedback(true)
+        } else {
             startPlayback()
+            showPlaybackStateFeedback(false)
+        }
     }
 
     function seekBy(offset)
@@ -1981,6 +2070,7 @@ Maui.ApplicationWindow
                            : Math.max(0, targetPosition)
 
         player.seek(nextPosition)
+        showSeekFeedback(offset)
     }
 
     function setPlayerVolume(value)
@@ -2079,6 +2169,12 @@ Maui.ApplicationWindow
     function openSettingsDialog()
     {
         const dialog = _settingsDialogComponent.createObject(root)
+        dialog.open()
+    }
+
+    function openShortcutsDialog()
+    {
+        const dialog = _shortcutsDialogComponent.createObject(root)
         dialog.open()
     }
 

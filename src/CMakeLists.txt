@@ -54,6 +54,7 @@ qt_add_qml_module(${PROJECT_NAME} URI app.maui.clip
     views/ListDelegate.qml
     views/SelectionBar.qml
     views/settings/SettingsDialog.qml
+    views/settings/ShortcutsDialog.qml
 )
 
 target_compile_definitions(${PROJECT_NAME}
