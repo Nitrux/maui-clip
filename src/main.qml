@@ -4,6 +4,7 @@ import QtQml
 import QtQuick.Controls
 import QtQuick.Layouts
 import QtQuick.Window
+import QtQuick.Effects
 
 import QtMultimedia
 
@@ -36,6 +37,7 @@ Maui.ApplicationWindow
     property bool reachedEndOfFile: false
     property var shuffledPlaybackHistory: []
     property int shuffledPlaybackHistoryPosition: -1
+    property bool strictCompactVolumePopupDebug: true
     readonly property int replayModeOff: 0
     readonly property int replayModeOne: 1
     readonly property int replayModeAll: 2
@@ -58,6 +60,128 @@ Maui.ApplicationWindow
                                                             || _fullScreenTopRevealArea.containsMouse
                                                             || _fullScreenBottomRevealArea.containsMouse
     property real fullScreenPlaybackChromeOpacity: fullScreenPlaybackChromeVisible ? 1 : 0
+
+    function compactVolumePopupHost()
+    {
+        return root.contentItem ? root.contentItem : null
+    }
+
+    function compactVolumePopupMargin()
+    {
+        return Maui.Style.space.small
+    }
+
+    function compactVolumePopupRawX()
+    {
+        const host = compactVolumePopupHost()
+        if (!host)
+            return 0
+
+        const buttonCenter = _volumeButton.mapToItem(host, _volumeButton.width / 2, 0)
+        return buttonCenter.x - (_compactVolumePopup.width / 2)
+    }
+
+    function compactVolumePopupX()
+    {
+        const host = compactVolumePopupHost()
+        if (!host)
+            return 0
+
+        const margin = compactVolumePopupMargin()
+        const maxX = Math.max(margin, host.width - _compactVolumePopup.width - margin)
+        return Math.max(margin, Math.min(compactVolumePopupRawX(), maxX))
+    }
+
+    function compactVolumePopupPreferredAboveY()
+    {
+        const host = compactVolumePopupHost()
+        if (!host)
+            return 0
+
+        const buttonTop = _volumeButton.mapToItem(host, 0, 0)
+        return buttonTop.y - _compactVolumePopup.height - compactVolumePopupMargin()
+    }
+
+    function compactVolumePopupFallbackBelowY()
+    {
+        const host = compactVolumePopupHost()
+        if (!host)
+            return 0
+
+        const buttonBottom = _volumeButton.mapToItem(host, 0, _volumeButton.height)
+        return buttonBottom.y + compactVolumePopupMargin()
+    }
+
+    function compactVolumePopupY()
+    {
+        const host = compactVolumePopupHost()
+        if (!host)
+            return 0
+
+        const margin = compactVolumePopupMargin()
+        const maxY = Math.max(margin, host.height - _compactVolumePopup.height - margin)
+        const preferredAbove = compactVolumePopupPreferredAboveY()
+
+        if (preferredAbove >= margin)
+            return Math.max(margin, Math.min(preferredAbove, maxY))
+
+        return Math.max(margin, Math.min(compactVolumePopupFallbackBelowY(), maxY))
+    }
+
+    function compactVolumePopupDebugPoint(point)
+    {
+        return "(" + Math.round(point.x) + ", " + Math.round(point.y) + ")"
+    }
+
+    function compactVolumePopupBackgroundColor()
+    {
+        const background = _playerPage && _playerPage.footBar ? _playerPage.footBar.background : null
+        if (background && background.color !== undefined)
+            return background.color
+
+        return Maui.Theme.backgroundColor
+    }
+
+    function compactVolumePopupBorderColor()
+    {
+        const background = _playerPage && _playerPage.footBar ? _playerPage.footBar.background : null
+        if (background && background.border && background.border.color !== undefined)
+            return background.border.color
+
+        return Maui.Theme.alternateBackgroundColor
+    }
+
+    function logCompactVolumePopupGeometry(reason)
+    {
+        if (!strictCompactVolumePopupDebug || !_compactVolumePopup || !_volumeButton)
+            return
+
+        const host = compactVolumePopupHost()
+        if (!host)
+            return
+
+        const buttonTopLeft = _volumeButton.mapToItem(host, 0, 0)
+        const buttonBottomRight = _volumeButton.mapToItem(host, _volumeButton.width, _volumeButton.height)
+        const popupTopLeft = _compactVolumePopup.mapToItem(host, 0, 0)
+
+        console.log("[compact-volume-popup]"
+                    + " reason=" + reason
+                    + " visible=" + _compactVolumePopup.visible
+                    + " compact=" + _playerPage.compactVolumeControl
+                    + " popupVisible=" + _playerPage.compactVolumePopupVisible
+                    + " hostSize=" + Math.round(host.width) + "x" + Math.round(host.height)
+                    + " footBarSize=" + Math.round(_playerPage.footBar.width) + "x" + Math.round(_playerPage.footBar.height)
+                    + " buttonTopLeft=" + compactVolumePopupDebugPoint(buttonTopLeft)
+                    + " buttonBottomRight=" + compactVolumePopupDebugPoint(buttonBottomRight)
+                    + " buttonSize=" + Math.round(_volumeButton.width) + "x" + Math.round(_volumeButton.height)
+                    + " popupTopLeft=" + compactVolumePopupDebugPoint(popupTopLeft)
+                    + " popupSize=" + Math.round(_compactVolumePopup.width) + "x" + Math.round(_compactVolumePopup.height)
+                    + " rawX=" + Math.round(compactVolumePopupRawX())
+                    + " resolvedX=" + Math.round(_compactVolumePopup.x)
+                    + " preferredAboveY=" + Math.round(compactVolumePopupPreferredAboveY())
+                    + " fallbackBelowY=" + Math.round(compactVolumePopupFallbackBelowY())
+                    + " resolvedY=" + Math.round(_compactVolumePopup.y))
+    }
 
     function handleEscapeShortcut()
     {
@@ -83,6 +207,19 @@ Maui.ApplicationWindow
     Component.onCompleted:
     {
         Qt.callLater(() => _workspace.sideBar.close())
+        Qt.callLater(() => logCompactVolumePopupGeometry("root completed"))
+    }
+
+    onWidthChanged:
+    {
+        if (_compactVolumePopup.visible)
+            Qt.callLater(() => logCompactVolumePopupGeometry("root width changed"))
+    }
+
+    onHeightChanged:
+    {
+        if (_compactVolumePopup.visible)
+            Qt.callLater(() => logCompactVolumePopupGeometry("root height changed"))
     }
 
     Maui.WindowBlur
@@ -901,8 +1038,26 @@ Maui.ApplicationWindow
                 anchors.fill: parent
                 background: null
                 headBar.visible: false
+                readonly property int minimumSeekBarWidth: Maui.Style.units.gridUnit * 8
+                readonly property int expandedVolumeSliderWidth: Maui.Style.units.gridUnit * 7
+                readonly property bool compactVolumeControl: footBar.width > 0
+                                                            && footBar.width < (footBar.leftLayout.implicitWidth
+                                                                                + _playbackTimeLabel.implicitWidth
+                                                                                + _volumeButton.implicitWidth
+                                                                                + expandedVolumeSliderWidth
+                                                                                + minimumSeekBarWidth
+                                                                                + (Maui.Style.space.small * 6))
+                property bool compactVolumePopupVisible: false
 
                 Maui.Controls.showCSD: true
+
+                onCompactVolumeControlChanged:
+                {
+                    if (!compactVolumeControl)
+                        compactVolumePopupVisible = false
+
+                    Qt.callLater(() => root.logCompactVolumePopupGeometry("compact mode changed"))
+                }
 
                 Keys.enabled: !Maui.Handy.isMobile
                 Keys.onPressed: (event) =>
@@ -1365,6 +1520,7 @@ Maui.ApplicationWindow
 
                 floatingFooter: true
                 footerMargins: Maui.Style.contentMargins
+                footBar.forceCenterMiddleContent: false
                 footBar.visible: !fullScreenPlaybackChromeAutoHide || fullScreenPlaybackChromeOpacity > 0.01
                 footBar.enabled: fullScreenPlaybackChromeOpacity > 0.01
                 footBar.opacity: fullScreenPlaybackChromeOpacity
@@ -1373,7 +1529,10 @@ Maui.ApplicationWindow
                 {
                     id: _slider
                     Layout.fillWidth: true
+                    Layout.minimumWidth: 0
+                    Layout.preferredWidth: 0
                     padding: 0
+                    implicitWidth: 0
                     orientation: Qt.Horizontal
                     from: 0
                     to: cachedPlayerDuration || player.duration
@@ -1415,11 +1574,13 @@ Maui.ApplicationWindow
                 footBar.rightContent: [
                     Label
                     {
+                        id: _playbackTimeLabel
                         text: Maui.Handy.formatTime(Math.round(displayedPlayerPosition() / 1000)) + " / " + Maui.Handy.formatTime(Math.round(player.duration / 1000))
                     },
 
                     ToolButton
                     {
+                        id: _volumeButton
                         enabled: _volumeSlider.enabled
                         text: volumeGlyph(_playerView.playerVolume || 0)
                         display: AbstractButton.TextOnly
@@ -1429,13 +1590,55 @@ Maui.ApplicationWindow
                         font.family: "Font Awesome 6 Free Solid"
                         font.pixelSize: Maui.Style.fontSizes.small
                         font.weight: Font.Black
-                        onClicked: toggleMute()
+                        onClicked:
+                        {
+                            if (!_playerPage.compactVolumeControl) {
+                                toggleMute()
+                            } else {
+                                _playerPage.compactVolumePopupVisible = !_playerPage.compactVolumePopupVisible
+                                Qt.callLater(() => root.logCompactVolumePopupGeometry("volume button toggled compact popup"))
+                            }
+                        }
+                        onXChanged:
+                        {
+                            if (_compactVolumePopup.visible)
+                                Qt.callLater(() => root.logCompactVolumePopupGeometry("volume button x changed"))
+                        }
+                        onYChanged:
+                        {
+                            if (_compactVolumePopup.visible)
+                                Qt.callLater(() => root.logCompactVolumePopupGeometry("volume button y changed"))
+                        }
+                        onWidthChanged:
+                        {
+                            if (_compactVolumePopup.visible)
+                                Qt.callLater(() => root.logCompactVolumePopupGeometry("volume button width changed"))
+                        }
+                        onHeightChanged:
+                        {
+                            if (_compactVolumePopup.visible)
+                                Qt.callLater(() => root.logCompactVolumePopupGeometry("volume button height changed"))
+                        }
+
+                        MouseArea
+                        {
+                            anchors.fill: parent
+                            acceptedButtons: Qt.NoButton
+                            hoverEnabled: true
+                            z: 10
+
+                            onWheel: function(wheel)
+                            {
+                                handleVolumeWheel(wheel, 5)
+                            }
+                        }
                     },
 
                     Slider
                     {
                         id: _volumeSlider
-                        implicitWidth: Maui.Style.units.gridUnit * 7
+                        visible: !_playerPage.compactVolumeControl
+                        implicitWidth: visible ? _playerPage.expandedVolumeSliderWidth : 0
                         from: 0
                         to: 100
                         stepSize: 5
@@ -1452,19 +1655,99 @@ Maui.ApplicationWindow
 
                             onWheel: function(wheel)
                             {
-                                if (!_volumeSlider.enabled)
-                                    return
-
-                                const delta = wheel.angleDelta.y !== 0 ? wheel.angleDelta.y : wheel.pixelDelta.y
-                                if (delta === 0)
-                                    return
-
-                                setPlayerVolume(_volumeSlider.value + (delta > 0 ? _volumeSlider.stepSize : -_volumeSlider.stepSize))
-                                wheel.accepted = true
+                                handleVolumeWheel(wheel, _volumeSlider.stepSize)
                             }
                         }
                     }
                 ]
+
+                Rectangle
+                {
+                    id: _compactVolumePopup
+                    parent: root.contentItem
+                    visible: _playerPage.compactVolumeControl && _playerPage.compactVolumePopupVisible
+                    z: 2000
+                    width: Math.max(Maui.Style.units.gridUnit * 3,
+                                    _compactVolumeContent.implicitWidth + (Maui.Style.space.small * 2))
+                    height: _compactVolumeContent.implicitHeight + (Maui.Style.space.small * 2)
+                    x: root.compactVolumePopupX()
+                    y: root.compactVolumePopupY()
+                    color: root.compactVolumePopupBackgroundColor()
+                    radius: Maui.Style.radiusV
+                    border.color: root.compactVolumePopupBorderColor()
+                    border.width: 1
+                    layer.enabled: GraphicsInfo.api !== GraphicsInfo.Software
+                    layer.effect: MultiEffect
+                    {
+                        shadowEnabled: true
+                        shadowColor: Qt.rgba(0, 0, 0, 0.35)
+                        shadowBlur: 0.4
+                        shadowVerticalOffset: 2
+                    }
+                    onVisibleChanged: Qt.callLater(() => root.logCompactVolumePopupGeometry("popup visible changed"))
+                    onXChanged:
+                    {
+                        if (visible)
+                            Qt.callLater(() => root.logCompactVolumePopupGeometry("popup x changed"))
+                    }
+                    onYChanged:
+                    {
+                        if (visible)
+                            Qt.callLater(() => root.logCompactVolumePopupGeometry("popup y changed"))
+                    }
+                    onWidthChanged:
+                    {
+                        if (visible)
+                            Qt.callLater(() => root.logCompactVolumePopupGeometry("popup width changed"))
+                    }
+                    onHeightChanged:
+                    {
+                        if (visible)
+                            Qt.callLater(() => root.logCompactVolumePopupGeometry("popup height changed"))
+                    }
+
+                    ColumnLayout
+                    {
+                        id: _compactVolumeContent
+                        anchors.fill: parent
+                        anchors.margins: Maui.Style.space.small
+                        spacing: Maui.Style.space.small
+
+                        Label
+                        {
+                            Layout.alignment: Qt.AlignHCenter
+                            text: Math.round(_playerView.playerVolume || 0) + "%"
+                        }
+
+                        Slider
+                        {
+                            id: _compactVolumeSlider
+                            Layout.alignment: Qt.AlignHCenter
+                            implicitWidth: Maui.Style.units.gridUnit
+                            orientation: Qt.Vertical
+                            implicitHeight: Maui.Style.units.gridUnit * 8
+                            from: 0
+                            to: 100
+                            stepSize: 5
+                            enabled: typeof _playerView.playerVolume === "number"
+                            value: enabled ? _playerView.playerVolume : 100
+                            onMoved: setPlayerVolume(value)
+
+                            MouseArea
+                            {
+                                anchors.fill: parent
+                                acceptedButtons: Qt.NoButton
+                                hoverEnabled: true
+                                z: 10
+
+                                onWheel: function(wheel)
+                                {
+                                    handleVolumeWheel(wheel, _compactVolumeSlider.stepSize)
+                                }
+                            }
+                        }
+                    }
+                }
 
                 footBar.leftContent: Maui.ToolActions
                 {
@@ -2084,6 +2367,19 @@ Maui.ApplicationWindow
             lastAudibleVolume = clamped
 
         _playerView.playerVolume = clamped
+    }
+
+    function handleVolumeWheel(wheel, stepSize)
+    {
+        if (typeof _playerView.playerVolume !== "number")
+            return
+
+        const delta = wheel.angleDelta.y !== 0 ? wheel.angleDelta.y : wheel.pixelDelta.y
+        if (delta === 0)
+            return
+
+        setPlayerVolume((_playerView.playerVolume || 0) + (delta > 0 ? stepSize : -stepSize))
+        wheel.accepted = true
     }
 
     function adjustVolume(delta)
