@@ -59,7 +59,7 @@ Maui.ListBrowser
 
         label1.text: model.label
         label2.text: Qt.formatDateTime(new Date(model.modified), "d MMM yyyy")
-        imageSource: model.thumbnail
+        imageSource: model.thumbnail || model.preview || ""
         template.fillMode: Image.PreserveAspectCrop
 
         ToolButton

@@ -2,6 +2,7 @@
 
 #include <QDesktopServices>
 #include <QDir>
+#include <QDirIterator>
 #include <QFileInfo>
 #include <QSettings>
 #include <QUrl>
@@ -46,6 +47,37 @@ QStringList sanitizeSourcePaths(const QStringList &paths)
     }
 
     return sources;
+}
+
+QStringList sourcePreviews(const QUrl &sourceUrl)
+{
+    QStringList previews;
+
+    if (!sourceUrl.isLocalFile()) {
+        return previews;
+    }
+
+    QDirIterator it(sourceUrl.toLocalFile(),
+                    QStringList() << FMStatic::FILTER_LIST[FMStatic::FILTER_TYPE::VIDEO],
+                    QDir::Files,
+                    QDirIterator::NoIteratorFlags);
+
+    while (it.hasNext() && previews.size() < 4) {
+        const QUrl fileUrl = QUrl::fromLocalFile(it.next());
+        const auto info = FMStatic::getFileInfo(fileUrl);
+        const auto thumbnailKey = FMH::MODEL_NAME[FMH::MODEL_KEY::THUMBNAIL];
+        auto thumbnail = info.value(thumbnailKey).toString();
+
+        if (thumbnail.isEmpty()) {
+            thumbnail = "image://thumbnailer/" + fileUrl.toString();
+        }
+
+        if (!thumbnail.isEmpty() && !previews.contains(thumbnail)) {
+            previews << thumbnail;
+        }
+    }
+
+    return previews;
 }
 }
 
@@ -122,6 +154,8 @@ QVariantList Clip::sourcesModel() const
                 source[FMH::MODEL_NAME[FMH::MODEL_KEY::LABEL]] = QFileInfo(url.toLocalFile()).fileName();
             }
         }
+
+        source[FMH::MODEL_NAME[FMH::MODEL_KEY::PREVIEW]] = sourcePreviews(url).join(",");
 
         result << source;
         return result;
