@@ -26,6 +26,7 @@ set(QT_MAJOR_VERSION 6)
 set(REQUIRED_QT_VERSION 6.9)
 
 set(REQUIRED_KF_VERSION 6.13.0)
+set(REQUIRED_MAUIKIT_VERSION 4.0.4)
 
 # Certain versions of FFMPEG need this to be defined
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D __STDC_CONSTANT_MACROS")
@@ -38,7 +39,7 @@ include(CheckCXXCompilerFlag)
 
 find_package(Qt6 ${REQUIRED_QT_VERSION} REQUIRED NO_MODULE COMPONENTS Core Sql Qml Quick Multimedia Network)
 find_package(KF6 ${REQUIRED_KF_VERSION} REQUIRED COMPONENTS I18n CoreAddons)
-find_package(MauiKit4 4.0.4 REQUIRED COMPONENTS FileBrowsing)
+find_package(MauiKit4 ${REQUIRED_MAUIKIT_VERSION} REQUIRED COMPONENTS FileBrowsing)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(MPV REQUIRED IMPORTED_TARGET mpv)
 
