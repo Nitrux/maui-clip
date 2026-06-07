@@ -5,7 +5,7 @@
 
 cmake_minimum_required(VERSION 3.16)
 
-set(CLIP_VERSION 4.0.3)
+set(CLIP_VERSION 4.0.4)
 add_compile_definitions(APP_COPYRIGHT_NOTICE="© 2019-2025 Maui Development Team")
 
 project(clip VERSION ${CLIP_VERSION} LANGUAGES CXX)
@@ -38,7 +38,7 @@ include(CheckCXXCompilerFlag)
 
 find_package(Qt6 ${REQUIRED_QT_VERSION} REQUIRED NO_MODULE COMPONENTS Core Sql Qml Quick Multimedia Network)
 find_package(KF6 ${REQUIRED_KF_VERSION} REQUIRED COMPONENTS I18n CoreAddons)
-find_package(MauiKit4 4.0.3 REQUIRED COMPONENTS FileBrowsing)
+find_package(MauiKit4 4.0.4 REQUIRED COMPONENTS FileBrowsing)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(MPV REQUIRED IMPORTED_TARGET mpv)
 
