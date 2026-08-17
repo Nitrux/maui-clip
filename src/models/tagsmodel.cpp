@@ -10,7 +10,6 @@ TagsModel::TagsModel(QObject *parent) : MauiList(parent)
     m_quickPlaces << QVariantMap{{"icon", "love"}, {"path", "tags:///fav"}, {"label", i18n("Favorites")}};
       m_quickPlaces << QVariantMap{{"icon", "folder-download"}, {"path", FMStatic::DownloadsPath}, {"label", i18n("Downloads")}};
       m_quickPlaces << QVariantMap{{"icon", "folder-videos"}, {"path", FMStatic::VideosPath}, {"label", i18n("Videos")}};
-//      m_quickPlaces << QVariantMap{{"icon", "org.gnome.Screenshot-symbolic"}, {"path", screenshotsPath().toString()}, {"label", i18n("Screenshots")}};
       m_quickPlaces << QVariantMap{{"icon", "view-list-icons"}, {"path", "collection:///"}, {"label", i18n("Collection")}};
 
     connect(Tagging::getInstance(), &Tagging::tagged, [this](QVariantMap tag) {
