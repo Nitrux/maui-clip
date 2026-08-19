@@ -619,7 +619,7 @@ Maui.ApplicationWindow
             sideBar.preferredWidth: Math.min(root.width * (root.height > root.width ? 0.84 : 0.38), Maui.Style.units.gridUnit * 24)
             sideBar.minimumWidth: Maui.Style.units.gridUnit * 14
             sideBar.maximumWidth: Maui.Style.units.gridUnit * 30
-            sideBar.collapsed: root.height > root.width || root.width < Maui.Style.units.gridUnit * 42
+            sideBar.collapsed: true
             sideBar.autoShow: false
             sideBar.autoHide: true
             sideBar.floats: true
@@ -655,7 +655,25 @@ Maui.ApplicationWindow
                         easing.type: Easing.InOutQuad
                     }
                 }
-                layer.enabled: true
+                layer.enabled: GraphicsInfo.api !== GraphicsInfo.Software
+                layer.effect: MultiEffect
+                {
+                    maskEnabled: true
+                    maskThresholdMin: 0.5
+                    maskSpreadAtMin: 1.0
+                    maskSpreadAtMax: 0.0
+                    maskThresholdMax: 1.0
+                    maskSource: ShaderEffectSource
+                    {
+                        sourceItem: Rectangle
+                        {
+                            width: _libraryPanel.width
+                            height: _libraryPanel.height
+                            radius: Maui.Style.radiusV
+                        }
+                    }
+                }
+
                 Maui.Theme.colorSet: Maui.Theme.Window
                 Maui.Theme.inherit: false
 
