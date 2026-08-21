@@ -280,13 +280,15 @@ Maui.AltBrowser
 
         onToggled: (state) =>
         {
-            control.currentIndex = index
+            control.currentView.currentIndex = index
+            control.currentView.forceActiveFocus()
             control.currentView.itemsSelected([index])
         }
 
         onClicked: (mouse) =>
         {
-            control.currentIndex = index
+            control.currentView.currentIndex = index
+            control.currentView.forceActiveFocus()
             if (selectionMode || (mouse.button == Qt.LeftButton && (mouse.modifiers & Qt.ControlModifier))) {
                 control.currentView.itemsSelected([index])
             } else if (Maui.Handy.singleClick) {
@@ -296,7 +298,8 @@ Maui.AltBrowser
 
         onDoubleClicked:
         {
-            control.currentIndex = index
+            control.currentView.currentIndex = index
+            control.currentView.forceActiveFocus()
             if (!Maui.Handy.singleClick && !selectionMode)
                 control.itemClicked(listModel.get(index))
         }
@@ -306,14 +309,17 @@ Maui.AltBrowser
             if (!Maui.Handy.isTouch)
                 return
 
-            control.currentIndex = index
+            control.currentView.currentIndex = index
+
+            control.currentView.forceActiveFocus()
             control.itemRightClicked(listModel.get(index))
             _menu.show()
         }
 
         onRightClicked:
         {
-            control.currentIndex = index
+            control.currentView.currentIndex = index
+            control.currentView.forceActiveFocus()
             control.itemRightClicked(listModel.get(index))
             _menu.show()
         }
@@ -422,7 +428,8 @@ Maui.AltBrowser
 
             onClicked: (mouse) =>
             {
-                control.currentIndex = index
+                control.currentView.currentIndex = index
+                control.currentView.forceActiveFocus()
                 if (selectionMode || (mouse.button == Qt.LeftButton && (mouse.modifiers & Qt.ControlModifier))) {
                     control.currentView.itemsSelected([index])
                 } else if (Maui.Handy.singleClick) {
@@ -432,7 +439,8 @@ Maui.AltBrowser
 
             onDoubleClicked:
             {
-                control.currentIndex = index
+                control.currentView.currentIndex = index
+                control.currentView.forceActiveFocus()
                 if (!Maui.Handy.singleClick && !selectionMode)
                     control.itemClicked(listModel.get(index))
             }
@@ -442,21 +450,25 @@ Maui.AltBrowser
                 if (!Maui.Handy.isTouch)
                     return
 
-                control.currentIndex = index
+                control.currentView.currentIndex = index
+
+                control.currentView.forceActiveFocus()
                 control.itemRightClicked(listModel.get(index))
                 _menu.show()
             }
 
             onRightClicked:
             {
-                control.currentIndex = index
+                control.currentView.currentIndex = index
+                control.currentView.forceActiveFocus()
                 control.itemRightClicked(listModel.get(index))
                 _menu.show()
             }
 
             onToggled:
             {
-                control.currentIndex = index
+                control.currentView.currentIndex = index
+                control.currentView.forceActiveFocus()
                 control.currentView.itemsSelected([index])
             }
 
@@ -504,5 +516,11 @@ Maui.AltBrowser
     function clearSearch()
     {
         _collectionModel.filter = ""
+    }
+
+    function forceActiveFocus()
+    {
+        if (control.currentView)
+            control.currentView.forceActiveFocus()
     }
 }

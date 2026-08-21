@@ -136,14 +136,16 @@ Maui.AltBrowser
 
         onClicked:
         {
-            control.currentIndex = index
+            control.currentView.currentIndex = index
+            control.currentView.forceActiveFocus()
             if (Maui.Handy.singleClick)
                 populateGrid(model.tag)
         }
 
         onDoubleClicked:
         {
-            control.currentIndex = index
+            control.currentView.currentIndex = index
+            control.currentView.forceActiveFocus()
             if (!Maui.Handy.singleClick)
                 populateGrid(model.tag)
         }
@@ -169,14 +171,16 @@ Maui.AltBrowser
 
             onClicked:
             {
-                control.currentIndex = index
+                control.currentView.currentIndex = index
+                control.currentView.forceActiveFocus()
                 if (Maui.Handy.singleClick)
                     populateGrid(model.tag)
             }
 
             onDoubleClicked:
             {
-                control.currentIndex = index
+                control.currentView.currentIndex = index
+                control.currentView.forceActiveFocus()
                 if (!Maui.Handy.singleClick)
                     populateGrid(model.tag)
             }
@@ -214,5 +218,11 @@ Maui.AltBrowser
     function clearSearch()
     {
         _collectionModel.filter = ""
+    }
+
+    function forceActiveFocus()
+    {
+        if (control.currentView)
+            control.currentView.forceActiveFocus()
     }
 }

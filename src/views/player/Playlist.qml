@@ -23,10 +23,15 @@ Maui.ListBrowser
     holder.title: i18n("Playlist is Empty")
     holder.body: i18n("Play videos from your library to build a playlist.")
 
-    Binding on currentIndex
+    Connections
     {
-        value: _playerView.currentVideoIndex
-        restoreMode: Binding.RestoreBindingOrValue
+        target: _playerView
+
+        function onCurrentVideoIndexChanged()
+        {
+            if (_playerView.currentVideoIndex >= 0)
+                control.currentIndex = _playerView.currentVideoIndex
+        }
     }
 
     model: Maui.BaseModel

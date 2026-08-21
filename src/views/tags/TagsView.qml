@@ -70,6 +70,7 @@ StackView
             control.pop()
 
         control.push(_filterViewComponent)
+        Qt.callLater(() => control.forceActiveFocus())
     }
 
     function search(text)
@@ -98,5 +99,11 @@ StackView
     function applySort(index)
     {
         _tagsGrid.applySort(index)
+    }
+
+    function forceActiveFocus()
+    {
+        if (control.currentItem && control.currentItem.forceActiveFocus)
+            control.currentItem.forceActiveFocus()
     }
 }

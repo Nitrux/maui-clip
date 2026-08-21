@@ -469,7 +469,14 @@ Maui.ApplicationWindow
             ToolButton
             {
                 icon.name: (_workspace.sideBar.visible && _workspace.sideBar.position > 0) ? "sidebar-collapse" : "sidebar-expand"
-                onClicked: _workspace.sideBar.toggle()
+                onClicked:
+                {
+                    const opening = _workspace.sideBar.position === 0
+                    _workspace.sideBar.toggle()
+
+                    if (opening && currentRoute && currentRoute.forceActiveFocus)
+                        Qt.callLater(() => currentRoute.forceActiveFocus())
+                }
                 checked: _workspace.sideBar.visible && _workspace.sideBar.position > 0
                 ToolTip.delay: 1000
                 ToolTip.timeout: 5000
@@ -1208,7 +1215,7 @@ Maui.ApplicationWindow
                                 anchors.horizontalCenter: parent.horizontalCenter
                                 text: "\uf04a"
                                 font.family: "Font Awesome 6 Free Solid"
-                                font.pixelSize: Maui.Style.fontSizes.big
+                                font.pointSize: Maui.Style.fontSizes.big
                                 font.weight: Font.Black
                                 color: "white"
                                 horizontalAlignment: Text.AlignHCenter
@@ -1218,7 +1225,7 @@ Maui.ApplicationWindow
                             {
                                 anchors.horizontalCenter: parent.horizontalCenter
                                 text: _seekBackwardOverlay.amountText
-                                font.pixelSize: Maui.Style.fontSizes.small
+                                font.pointSize: Maui.Style.fontSizes.small
                                 font.weight: Font.DemiBold
                                 color: "white"
                                 horizontalAlignment: Text.AlignHCenter
@@ -1318,7 +1325,7 @@ Maui.ApplicationWindow
                                 anchors.horizontalCenter: parent.horizontalCenter
                                 text: "\uf04e"
                                 font.family: "Font Awesome 6 Free Solid"
-                                font.pixelSize: Maui.Style.fontSizes.big
+                                font.pointSize: Maui.Style.fontSizes.big
                                 font.weight: Font.Black
                                 color: "white"
                                 horizontalAlignment: Text.AlignHCenter
@@ -1328,7 +1335,7 @@ Maui.ApplicationWindow
                             {
                                 anchors.horizontalCenter: parent.horizontalCenter
                                 text: _seekForwardOverlay.amountText
-                                font.pixelSize: Maui.Style.fontSizes.small
+                                font.pointSize: Maui.Style.fontSizes.small
                                 font.weight: Font.DemiBold
                                 color: "white"
                                 horizontalAlignment: Text.AlignHCenter
@@ -1427,7 +1434,7 @@ Maui.ApplicationWindow
                                 anchors.horizontalCenter: parent.horizontalCenter
                                 text: _playbackStateOverlay.iconGlyph
                                 font.family: "Font Awesome 6 Free Solid"
-                                font.pixelSize: Maui.Style.fontSizes.big
+                                font.pointSize: Maui.Style.fontSizes.big
                                 font.weight: Font.Black
                                 color: "white"
                                 horizontalAlignment: Text.AlignHCenter
@@ -1437,7 +1444,7 @@ Maui.ApplicationWindow
                             {
                                 anchors.horizontalCenter: parent.horizontalCenter
                                 text: _playbackStateOverlay.statusText
-                                font.pixelSize: Maui.Style.fontSizes.small
+                                font.pointSize: Maui.Style.fontSizes.small
                                 font.weight: Font.DemiBold
                                 color: "white"
                                 horizontalAlignment: Text.AlignHCenter
@@ -1606,7 +1613,7 @@ Maui.ApplicationWindow
                         implicitWidth: Maui.Style.iconSizes.medium
                         implicitHeight: Maui.Style.iconSizes.medium
                         font.family: "Font Awesome 6 Free Solid"
-                        font.pixelSize: Maui.Style.fontSizes.small
+                        font.pointSize: Maui.Style.fontSizes.small
                         font.weight: Font.Black
                         onClicked:
                         {
@@ -1938,17 +1945,13 @@ Maui.ApplicationWindow
 
     function showLibrarySection(index)
     {
-        const keepPlayerFocus = !!_playerView.currentVideo.url
-
         if (_libraryTabs.currentIndex !== index)
             _libraryTabs.currentIndex = index
 
         if (_workspace.sideBar.position === 0)
             _workspace.sideBar.open()
 
-        if (keepPlayerFocus)
-            Qt.callLater(() => _playerPage.forceActiveFocus())
-        else if (currentRoute && currentRoute.forceActiveFocus)
+        if (currentRoute && currentRoute.forceActiveFocus)
             Qt.callLater(() => currentRoute.forceActiveFocus())
     }
 

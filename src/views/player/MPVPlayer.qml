@@ -95,7 +95,7 @@ MpvObject
                 {
                     text: control.subtitleId === model.id ? "\uf00c" : ""
                     font.family: "Font Awesome 6 Free Solid"
-                    font.pixelSize: Maui.Style.fontSizes.small
+                    font.pointSize: Maui.Style.fontSizes.small
                     font.weight: Font.Black
                     color: Maui.Theme.highlightColor
                     verticalAlignment: Text.AlignVCenter
@@ -127,7 +127,7 @@ MpvObject
                 {
                     text: control.audioId === model.id ? "\uf00c" : ""
                     font.family: "Font Awesome 6 Free Solid"
-                    font.pixelSize: Maui.Style.fontSizes.small
+                    font.pointSize: Maui.Style.fontSizes.small
                     font.weight: Font.Black
                     color: Maui.Theme.highlightColor
                     verticalAlignment: Text.AlignVCenter

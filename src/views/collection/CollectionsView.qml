@@ -262,13 +262,17 @@ Maui.Page
 
             Component.onCompleted: control.rebuildSourcesModel("")
 
+            function forceActiveFocus()
+            {
+                _sourcesGrid.forceActiveFocus()
+            }
+
             Maui.GridBrowser
             {
                 id: _sourcesGrid
                 anchors.fill: parent
                 itemSize: Math.min(260, Math.max(140, Math.floor(availableWidth * 0.3)))
                 itemHeight: itemSize + Maui.Style.rowHeight
-                currentIndex: -1
                 flickable.reuseItems: true
 
                 holder.visible: count === 0
@@ -315,6 +319,7 @@ Maui.Page
                         onClicked:
                         {
                             _sourcesGrid.currentIndex = index
+                            _sourcesGrid.forceActiveFocus()
                             if (Maui.Handy.singleClick)
                                 control.openFolder(model.url)
                         }
@@ -322,6 +327,7 @@ Maui.Page
                         onDoubleClicked:
                         {
                             _sourcesGrid.currentIndex = index
+                            _sourcesGrid.forceActiveFocus()
                             if (!Maui.Handy.singleClick)
                                 control.openFolder(model.url)
                         }
@@ -431,7 +437,7 @@ Maui.Page
             _foldersView.currentItem.currentFolder = url
         }
 
-        _foldersView.forceActiveFocus()
+        Qt.callLater(() => control.forceActiveFocus())
     }
 
     function search(text)
@@ -458,5 +464,11 @@ Maui.Page
     {
         if (browsingFolder)
             _foldersView.pop()
+    }
+
+    function forceActiveFocus()
+    {
+        if (_foldersView.currentItem && _foldersView.currentItem.forceActiveFocus)
+            _foldersView.currentItem.forceActiveFocus()
     }
 }
