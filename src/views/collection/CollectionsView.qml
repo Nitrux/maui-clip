@@ -40,6 +40,11 @@ Maui.Page
         {
             control.rebuildSourcesModel(_searchField.text)
         }
+
+        function onSourceContentsChanged()
+        {
+            control.rebuildSourcesModel(_searchField.text)
+        }
     }
 
     Connections

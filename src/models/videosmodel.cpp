@@ -36,6 +36,7 @@ VideosModel::VideosModel(QObject *parent) : MauiList(parent)
     qDebug()<< "CREATING GALLERY LIST";
 
     m_fileLoader->informer = &videoData;
+    connect(Clip::instance(), &Clip::filesRemoved, this, &VideosModel::removeUrls);
 
 }
 
@@ -118,24 +119,29 @@ void VideosModel::scan(const QStringList &urls, const bool &recursive, const int
 {
     Q_UNUSED(limit)
     this->clear();
-    auto paths = urls.count() == 1 && urls.first() == "collection:///" ? Clip::instance()->sources() : urls;
+    const auto paths = urls.count() == 1 && urls.first() == "collection:///" ? Clip::instance()->sources() : urls;
+    const auto pathUrls = QUrl::fromStringList(paths);
 
-    m_fileLoader->requestPath(QUrl::fromStringList(paths), recursive, FMStatic::FILTER_LIST[FMStatic::FILTER_TYPE::VIDEO]);
+    for (const auto &path : pathUrls) {
+        this->insertFolder(path);
+    }
+
+    m_fileLoader->requestPath(pathUrls, recursive, FMStatic::FILTER_LIST[FMStatic::FILTER_TYPE::VIDEO]);
 }
 
 void VideosModel::insertFolder(const QUrl &path)
 {
-    if(!m_folders.contains(path))
-    {
-        m_folders << path;
-
-        if(m_autoReload)
-        {
-            this->m_watcher->addPath(path.toLocalFile());
-        }
-
-        Q_EMIT foldersChanged();
+    if (!path.isLocalFile() || !FMStatic::isDir(path) || m_folders.contains(path)) {
+        return;
     }
+
+    m_folders << path;
+
+    if (m_autoReload) {
+        this->m_watcher->addPath(path.toLocalFile());
+    }
+
+    Q_EMIT foldersChanged();
 }
 
 bool VideosModel::remove(const int &index)
@@ -151,6 +157,29 @@ bool VideosModel::remove(const int &index)
     return true;
 }
 
+bool VideosModel::removeUrls(const QStringList &urls)
+{
+    bool removed = false;
+
+    for (const auto &url : urls)
+    {
+        const QUrl targetUrl = QUrl::fromUserInput(url);
+
+        for (int i = this->list.size() - 1; i >= 0; --i)
+        {
+            const auto itemUrl = this->list.at(i).value(FMH::MODEL_KEY::URL);
+            const QUrl itemQUrl = QUrl::fromUserInput(itemUrl);
+
+            if (itemUrl == url || (targetUrl.isValid() && itemQUrl.isValid() && targetUrl == itemQUrl))
+            {
+                removed = this->remove(i) || removed;
+            }
+        }
+    }
+
+    return removed;
+}
+
 bool VideosModel::deleteAt(const int &index)
 {
     if(index >= this->list.size() || index < 0)
@@ -158,7 +187,7 @@ bool VideosModel::deleteAt(const int &index)
 
     Q_EMIT this->preItemRemoved(index);
     auto item = this->list.takeAt(index);
-    FMStatic::removeFiles ({item[FMH::MODEL_KEY::URL]});
+    Clip::instance()->removeFiles({item[FMH::MODEL_KEY::URL]});
     Q_EMIT this->postItemRemoved();
     Q_EMIT this->countChanged();
 
@@ -236,11 +265,6 @@ void VideosModel::componentComplete()
         this-> list << items;
         Q_EMIT this->postListChanged();
         Q_EMIT this->countChanged();
-    });
-
-    connect(m_fileLoader, &FMH::FileLoader::itemReady,[this](FMH::MODEL item)
-    {
-        this->insertFolder(item[FMH::MODEL_KEY::SOURCE]);
     });
 
     connect(m_watcher, &QFileSystemWatcher::directoryChanged, [this](QString dir)

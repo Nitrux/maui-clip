@@ -5,6 +5,8 @@
 #include <MauiKit4/Core/fmh.h>
 #include <MauiKit4/FileBrowsing/fmstatic.h>
 
+class QFileSystemWatcher;
+
 class Clip : public QObject
 {
     Q_OBJECT
@@ -33,6 +35,7 @@ public Q_SLOTS:
     void openVideos(const QList<QUrl> &urls);
     void refreshCollection();
     /*File actions*/
+    bool removeFiles(const QList<QUrl> &urls);
     static void showInFolder(const QStringList &urls);
 
 private:
@@ -44,10 +47,15 @@ private:
 
     static void removeSourcePath(const QString &path);
 
+    void updateSourcesWatcher();
+
 Q_SIGNALS:
     void refreshViews(QVariantMap tables);
     void openUrls(QStringList urls);
+    void filesRemoved(const QStringList &urls);
+    void sourceContentsChanged();
     void sourcesChanged();
 
 private:
+    QFileSystemWatcher *m_sourcesWatcher;
 };

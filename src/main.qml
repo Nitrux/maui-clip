@@ -324,8 +324,7 @@ Maui.ApplicationWindow
                     Maui.Controls.status: Maui.Controls.Negative
                     onTriggered:
                     {
-                        for (var url of urls)
-                            FB.FM.removeFile(url)
+                        Clip.Clip.removeFiles(urls)
 
                         close()
                     }

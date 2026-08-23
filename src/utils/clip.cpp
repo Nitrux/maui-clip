@@ -4,6 +4,7 @@
 #include <QDir>
 #include <QDirIterator>
 #include <QFileInfo>
+#include <QFileSystemWatcher>
 #include <QSettings>
 #include <QUrl>
 
@@ -83,8 +84,14 @@ QStringList sourcePreviews(const QUrl &sourceUrl)
 
 Clip::Clip(QObject *parent)
     : QObject(parent)
+    , m_sourcesWatcher(new QFileSystemWatcher(this))
 {
     FMStatic::createDir(FMStatic::PicturesPath, "screenshots");
+    connect(m_sourcesWatcher, &QFileSystemWatcher::directoryChanged, this, [this](const QString &)
+    {
+        Q_EMIT sourceContentsChanged();
+    });
+    updateSourcesWatcher();
 }
 
 const QStringList Clip::getSourcePaths()
@@ -103,6 +110,26 @@ const QStringList Clip::getSourcePaths()
 
     settings.endGroup();
     return sources;
+}
+
+void Clip::updateSourcesWatcher()
+{
+    const auto watchedDirectories = m_sourcesWatcher->directories();
+    if (!watchedDirectories.isEmpty()) {
+        m_sourcesWatcher->removePaths(watchedDirectories);
+    }
+
+    QStringList sourceDirectories;
+    for (const auto &source : getSourcePaths()) {
+        const QUrl url(source);
+        if (url.isLocalFile() && QFileInfo(url.toLocalFile()).isDir()) {
+            sourceDirectories << url.toLocalFile();
+        }
+    }
+
+    if (!sourceDirectories.isEmpty()) {
+        m_sourcesWatcher->addPaths(sourceDirectories);
+    }
 }
 
 void Clip::saveSourcePath(const QStringList &paths)
@@ -178,6 +205,16 @@ void Clip::refreshCollection()
     qDebug() << "getting default sources to look up" << sources;
 }
 
+bool Clip::removeFiles(const QList<QUrl> &urls)
+{
+    if (!FMStatic::removeFiles(urls)) {
+        return false;
+    }
+
+    Q_EMIT filesRemoved(QUrl::toStringList(urls));
+    return true;
+}
+
 void Clip::showInFolder(const QStringList &urls)
 {
     for (const auto &url : urls) {
@@ -188,11 +225,13 @@ void Clip::showInFolder(const QStringList &urls)
 void Clip::addSources(const QStringList &paths)
 {
     saveSourcePath(paths);
+    updateSourcesWatcher();
     Q_EMIT sourcesChanged();
 }
 
 void Clip::removeSources(const QString &path)
 {
     removeSourcePath(path);
+    updateSourcesWatcher();
     Q_EMIT sourcesChanged();
 }

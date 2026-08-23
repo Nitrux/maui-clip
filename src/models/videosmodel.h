@@ -81,6 +81,7 @@ Q_SIGNALS:
 
 public Q_SLOTS:
     bool remove(const int &index);
+    bool removeUrls(const QStringList &urls);
     bool deleteAt(const int &index);
 
     void append(const QVariantMap &item);
