@@ -734,28 +734,6 @@ Maui.ApplicationWindow
                                 visible: playlistActive
                                 spacing: 0
 
-                                RowLayout
-                                {
-                                    Layout.fillWidth: true
-                                    Layout.leftMargin: Maui.Style.space.small
-                                    Layout.rightMargin: Maui.Style.space.small
-                                    Layout.topMargin: Maui.Style.space.small
-
-                                    Item
-                                    {
-                                        Layout.fillWidth: true
-                                    }
-
-                                    ToolButton
-                                    {
-                                        visible: _playlist.list.count > 0
-                                        icon.name: "edit-clear"
-                                        text: i18n("Clear")
-                                        display: AbstractButton.TextBesideIcon
-                                        onClicked: clearQueue()
-                                    }
-                                }
-
                                 Playlist
                                 {
                                     id: _playlist
@@ -1813,6 +1791,12 @@ Maui.ApplicationWindow
                 _playlist.list.appendUrl(url)
 
             playAt(_playlist.list.count - urls.length)
+        }
+
+        function onFilesRemoved(urls)
+        {
+            for (var url of urls)
+                _selectionBar.removeAtUri(url)
         }
     }
 

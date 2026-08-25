@@ -1,7 +1,11 @@
 #include "videosmodel.h"
+#include <QDir>
+#include <QFile>
 #include <QFileSystemWatcher>
+#include <QFileInfo>
 #include <QDebug>
-
+#include <QSaveFile>
+#include <QTextStream>
 #include <MauiKit4/FileBrowsing/tagging.h>
 #include <MauiKit4/FileBrowsing/fmstatic.h>
 #include <MauiKit4/FileBrowsing/fileloader.h>
@@ -208,6 +212,89 @@ void VideosModel::appendUrl(const QString &url)
     this->list << FMStatic::getFileInfoModel(QUrl::fromUserInput (url));
     Q_EMIT this->postItemAppended();
     Q_EMIT this->countChanged();
+}
+
+bool VideosModel::exportM3U(const QString &filePath)
+{
+    if (filePath.trimmed().isEmpty() || this->list.isEmpty()) {
+        return false;
+    }
+
+    const auto targetUrl = QUrl::fromUserInput(filePath);
+    const auto localPath = targetUrl.isLocalFile() ? targetUrl.toLocalFile() : filePath;
+
+    QSaveFile file(localPath);
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        qWarning() << "Could not open playlist file for writing:" << localPath;
+        return false;
+    }
+
+    QTextStream out(&file);
+    out << "#EXTM3U\n";
+
+    for (const auto &item : this->list) {
+        const auto rawUrl = item.value(FMH::MODEL_KEY::URL);
+        const auto url = QUrl::fromUserInput(rawUrl);
+        out << (url.isValid() ? url.toString() : rawUrl) << "\n";
+    }
+
+    if (!file.commit()) {
+        qWarning() << "Could not finalize playlist file:" << localPath;
+        return false;
+    }
+
+    return true;
+}
+
+bool VideosModel::importM3U(const QString &filePath)
+{
+    if (filePath.trimmed().isEmpty()) {
+        return false;
+    }
+
+    const auto sourceUrl = QUrl::fromUserInput(filePath);
+    const auto localPath = sourceUrl.isLocalFile() ? sourceUrl.toLocalFile() : filePath;
+
+    QFile file(localPath);
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        qWarning() << "Could not open playlist file for reading:" << localPath;
+        return false;
+    }
+
+    const auto baseDir = QFileInfo(localPath).absolutePath();
+    QStringList trackUrls;
+
+    QTextStream in(&file);
+    while (!in.atEnd()) {
+        const auto line = in.readLine().trimmed();
+        if (line.isEmpty() || line.startsWith(QLatin1Char(35))) {
+            continue;
+        }
+
+        QUrl trackUrl;
+        if (line.contains(QStringLiteral("://")) || line.startsWith(QStringLiteral("file:/"))) {
+            trackUrl = QUrl::fromUserInput(line);
+        } else {
+            const QFileInfo lineInfo(line);
+            const auto resolvedPath = lineInfo.isAbsolute() ? line : QDir(baseDir).filePath(line);
+            trackUrl = QUrl::fromLocalFile(QFileInfo(resolvedPath).absoluteFilePath());
+        }
+
+        if (trackUrl.isValid() && !videoData(trackUrl).isEmpty()) {
+            trackUrls << trackUrl.toString();
+        }
+    }
+
+    if (trackUrls.isEmpty()) {
+        return false;
+    }
+
+    this->clear();
+    for (const auto &trackUrl : trackUrls) {
+        this->appendUrl(trackUrl);
+    }
+
+    return !this->list.isEmpty();
 }
 
 void VideosModel::clear()

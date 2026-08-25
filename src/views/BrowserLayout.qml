@@ -329,18 +329,18 @@ Maui.AltBrowser
             function onUriRemoved(uri)
             {
                 if (uri === model.url)
-                    _listDelegate.checked = false
+                    _listDelegate.checked = Qt.binding(function() { return selectionBar ? selectionBar.contains(model.url) : false })
             }
 
             function onUriAdded(uri)
             {
                 if (uri === model.url)
-                    _listDelegate.checked = true
+                    _listDelegate.checked = Qt.binding(function() { return selectionBar ? selectionBar.contains(model.url) : false })
             }
 
             function onCleared(uri)
             {
-                _listDelegate.checked = false
+                _listDelegate.checked = Qt.binding(function() { return selectionBar ? selectionBar.contains(model.url) : false })
             }
         }
     }
@@ -433,18 +433,18 @@ Maui.AltBrowser
                 function onUriRemoved(uri)
                 {
                     if (uri === model.url)
-                        delegate.checked = false
+                        delegate.checked = Qt.binding(function() { return selectionBar ? selectionBar.contains(model.url) : false })
                 }
 
                 function onUriAdded(uri)
                 {
                     if (uri === model.url)
-                        delegate.checked = true
+                        delegate.checked = Qt.binding(function() { return selectionBar ? selectionBar.contains(model.url) : false })
                 }
 
                 function onCleared(uri)
                 {
-                    delegate.checked = false
+                    delegate.checked = Qt.binding(function() { return selectionBar ? selectionBar.contains(model.url) : false })
                 }
             }
         }

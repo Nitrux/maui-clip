@@ -86,6 +86,8 @@ public Q_SLOTS:
 
     void append(const QVariantMap &item);
     void appendUrl(const QString &url);
+    bool exportM3U(const QString &filePath);
+    bool importM3U(const QString &filePath);
     //    void appendAt(const QString &url, const int &pos);
 
     void clear();
