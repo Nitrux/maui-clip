@@ -26,6 +26,7 @@ Maui.ApplicationWindow
     title: _playerView.currentVideo.label || i18n("Clip")
     color: "transparent"
     background: null
+    onClosing: stopPlayback()
 
     property bool selectionMode: false
     property int lastAudibleVolume: 100
@@ -356,20 +357,6 @@ Maui.ApplicationWindow
             onClosed: destroy()
         }
     }
-
-    Component
-    {
-        id: _openUrlDialogComponent
-        Maui.InputDialog
-        {
-            title: i18n("Open URL")
-            textEntry.placeholderText: "URL"
-            message: i18n("Enter any remote location, like YouTube video URLs, or from other services supported by MPV.")
-            onAccepted: root.openUrl(textEntry.text)
-            onClosed: destroy()
-        }
-    }
-
     property QtObject tagsDialog: null
 
     Component
@@ -397,14 +384,6 @@ Maui.ApplicationWindow
         context: Qt.WindowShortcut
         onActivated: openFileDialog()
     }
-
-    Shortcut
-    {
-        sequence: "Ctrl+Shift+O"
-        context: Qt.WindowShortcut
-        onActivated: openUrlDialog()
-    }
-
     Shortcut
     {
         sequence: "Ctrl+1"
@@ -561,14 +540,14 @@ Maui.ApplicationWindow
                 {
                     visible: _displayOptionsMenu.trackOptionsVisible
                     implicitHeight: visible ? 1 + (Maui.Style.space.tiny * 2) : 0
-                    height: implicitHeight
+                    height: visible ? implicitHeight : -_displayOptionsMenu.spacing
                 }
 
                 MenuItem
                 {
                     visible: _playerView.hasSubtitleTracks
                     implicitHeight: visible ? contentItem.implicitHeight + topPadding + bottomPadding : 0
-                    height: implicitHeight
+                    height: visible ? implicitHeight : -_displayOptionsMenu.spacing
                     text: i18n("Subtitles")
                     onTriggered: _playerView.openSubtitlesDialog()
                 }
@@ -577,7 +556,7 @@ Maui.ApplicationWindow
                 {
                     visible: _playerView.hasAudioTracks
                     implicitHeight: visible ? contentItem.implicitHeight + topPadding + bottomPadding : 0
-                    height: implicitHeight
+                    height: visible ? implicitHeight : -_displayOptionsMenu.spacing
                     text: i18n("Audio Tracks")
                     onTriggered: _playerView.openAudioTracksDialog()
                 }
@@ -1606,14 +1585,11 @@ Maui.ApplicationWindow
                     {
                         id: _volumeButton
                         enabled: _volumeSlider.enabled
-                        text: volumeGlyph(_playerView.playerVolume || 0)
-                        display: AbstractButton.TextOnly
+                        icon.name: volumeIcon(_playerView.playerVolume || 0)
+                        display: AbstractButton.IconOnly
                         padding: 0
                         implicitWidth: Maui.Style.iconSizes.medium
                         implicitHeight: Maui.Style.iconSizes.medium
-                        font.family: "Font Awesome 6 Free Solid"
-                        font.pointSize: Maui.Style.fontSizes.small
-                        font.weight: Font.Black
                         onClicked:
                         {
                             if (!_playerPage.compactVolumeControl) {
@@ -2421,15 +2397,15 @@ Maui.ApplicationWindow
             setPlayerVolume(lastAudibleVolume > 0 ? lastAudibleVolume : 100)
     }
 
-    function volumeGlyph(volume)
+    function volumeIcon(volume)
     {
         if (volume <= 0)
-            return "\uf6a9"
+            return "audio-volume-muted"
 
         if (volume < 50)
-            return "\uf027"
+            return "audio-volume-low"
 
-        return "\uf028"
+        return "audio-volume-high"
     }
 
     function playbackHasError()
@@ -2475,13 +2451,6 @@ Maui.ApplicationWindow
         const dialog = fmDialogComponent.createObject(root, props)
         dialog.open()
     }
-
-    function openUrlDialog()
-    {
-        const dialog = _openUrlDialogComponent.createObject(root)
-        dialog.open()
-    }
-
     function openSettingsDialog()
     {
         const dialog = _settingsDialogComponent.createObject(root)
@@ -2493,21 +2462,6 @@ Maui.ApplicationWindow
         const dialog = _shortcutsDialogComponent.createObject(root)
         dialog.open()
     }
-
-    function openUrl(url)
-    {
-        if (!url || url.length === 0)
-            return
-
-        resetShuffleHistory()
-        _playerView.currentVideoIndex = -1
-        _playerView.currentVideo = ({ label: url, url: url, preview: "" })
-
-        applyReplayModeToPlayer()
-        _playerView.play()
-        _playerPage.forceActiveFocus()
-    }
-
     function tagFiles(urls)
     {
         if (!tagsDialog)

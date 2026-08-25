@@ -5,7 +5,6 @@ import QtQuick.Layouts
 import org.mauikit.controls as Maui
 
 import org.maui.clip as Clip
-import QtMultimedia
 
 Maui.AltBrowser
 {
@@ -17,7 +16,6 @@ Maui.AltBrowser
     property bool allowLassoSelection: true
     property string searchPlaceholder: i18n("Search videos")
     property bool showSortMenu: true
-
     property alias list: _collectionList
     property alias urls: _collectionList.urls
     property alias listModel: _collectionModel
@@ -353,28 +351,9 @@ Maui.AltBrowser
         height: GridView.view.cellHeight
         width: GridView.view.cellWidth
 
-        property bool preview: false
-
-        Timer
-        {
-            id: _timer
-            interval: 1500
-            onTriggered: parent.preview = true
-        }
-
         Maui.GridBrowserDelegate
         {
             id: delegate
-
-            onHoveredChanged:
-            {
-                if (hovered) {
-                    _timer.start()
-                } else {
-                    _timer.stop()
-                    preview = false
-                }
-            }
 
             iconSizeHint: Maui.Style.iconSizes.big
             label1.text: model.label
@@ -387,43 +366,14 @@ Maui.AltBrowser
             tooltipText: model.url
             checkable: root.selectionMode || checked
             checked: selectionBar ? selectionBar.contains(model.url) : false
-            draggable: true
+            draggable: false
 
-            Drag.keys: ["text/uri-list"]
-            Drag.mimeData: Drag.active ? {
-                "text/uri-list": control.filterSelectedItems(model.url)
-            } : {}
-
-            template.iconComponent: Loader
+            template.iconComponent: Maui.IconItem
             {
-                asynchronous: true
-                sourceComponent: preview && !Maui.Handy.isMobile ? videoComponent : imgComponent
-
-                Component
-                {
-                    id: videoComponent
-                    Video
-                    {
-                        autoPlay: true
-                        source: model.url
-                        muted: true
-                        fillMode: VideoOutput.PreserveAspectFit
-                        playbackRate: 1.0
-                        loops: 3
-                    }
-                }
-
-                Component
-                {
-                    id: imgComponent
-                    Maui.IconItem
-                    {
-                        imageSource: model.preview
-                        iconSource: model.icon
-                        fillMode: Image.PreserveAspectFit
-                        image.cache: true
-                    }
-                }
+                imageSource: model.preview
+                iconSource: model.icon
+                fillMode: Image.PreserveAspectFit
+                image.cache: true
             }
 
             onClicked: (mouse) =>

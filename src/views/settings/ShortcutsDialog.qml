@@ -26,22 +26,6 @@ Maui.SettingsDialog
                 Action { text: "O" }
             }
         }
-
-        Maui.FlexSectionItem
-        {
-            label1.text: i18n("Open URL")
-
-            Maui.ToolActions
-            {
-                checkable: false
-                autoExclusive: false
-
-                Action { text: "Ctrl" }
-                Action { text: "Shift" }
-                Action { text: "O" }
-            }
-        }
-
         Maui.FlexSectionItem
         {
             label1.text: i18n("Collections")

@@ -61,10 +61,13 @@ QStringList sourcePreviews(const QUrl &sourceUrl)
     QDirIterator it(sourceUrl.toLocalFile(),
                     QStringList() << FMStatic::FILTER_LIST[FMStatic::FILTER_TYPE::VIDEO],
                     QDir::Files,
-                    QDirIterator::NoIteratorFlags);
+                    QDirIterator::Subdirectories);
 
     while (it.hasNext() && previews.size() < 4) {
         const QUrl fileUrl = QUrl::fromLocalFile(it.next());
+#ifdef CLIP_BUILD_BUNDLED_PREVIEW_PROVIDER
+        const QString thumbnail = QStringLiteral("image://preview/") + fileUrl.toString();
+#else
         const auto info = FMStatic::getFileInfo(fileUrl);
         const auto thumbnailKey = FMH::MODEL_NAME[FMH::MODEL_KEY::THUMBNAIL];
         auto thumbnail = info.value(thumbnailKey).toString();
@@ -72,6 +75,7 @@ QStringList sourcePreviews(const QUrl &sourceUrl)
         if (thumbnail.isEmpty()) {
             thumbnail = "image://thumbnailer/" + fileUrl.toString();
         }
+#endif
 
         if (!thumbnail.isEmpty() && !previews.contains(thumbnail)) {
             previews << thumbnail;

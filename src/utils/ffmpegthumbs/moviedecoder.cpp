@@ -12,6 +12,7 @@
 extern "C" {
 #include <libswscale/swscale.h>
 #include <libavutil/imgutils.h>
+#include <libavutil/frame.h>
 }
 
 using namespace std;
@@ -87,8 +88,7 @@ void MovieDecoder::destroy()
 {
     deleteFilterGraph();
     if (m_pVideoCodecContext) {
-        avcodec_close(m_pVideoCodecContext);
-        m_pVideoCodecContext = nullptr;
+        avcodec_free_context(&m_pVideoCodecContext);
     }
 
     if ((!m_FormatContextWasGiven) && m_pFormatContext) {
@@ -134,7 +134,7 @@ bool MovieDecoder::initializeVideo()
     avcodec_parameters_to_context(m_pVideoCodecContext, m_pFormatContext->streams[m_VideoStream]->codecpar);
 
     if (m_pVideoCodec == nullptr) {
-        // set to nullptr, otherwise avcodec_close(m_pVideoCodecContext) crashes
+        // set to nullptr if the video codec context could not be initialized
         m_pVideoCodecContext = nullptr;
         qDebug() << "Video Codec not found";
         return false;
@@ -211,7 +211,7 @@ void MovieDecoder::seek(int timeInSeconds)
         }
 
         ++keyFrameAttempts;
-    } while ((!gotFrame || !m_pFrame->key_frame) && keyFrameAttempts < 200);
+    } while ((!gotFrame || !(m_pFrame->flags & AV_FRAME_FLAG_KEY)) && keyFrameAttempts < 200);
 
     if (gotFrame == 0) {
         qDebug() << "Seeking in video failed";
@@ -365,13 +365,22 @@ bool MovieDecoder::processFilterGraph(AVFrame *dst, const AVFrame *src,
 
 void MovieDecoder::getScaledVideoFrame(int scaledSize, bool maintainAspectRatio, VideoFrame& videoFrame)
 {
-    if (m_pFrame->interlaced_frame) {
-        processFilterGraph((AVFrame*) m_pFrame, (AVFrame*) m_pFrame, m_pVideoCodecContext->pix_fmt,
-                              m_pVideoCodecContext->width, m_pVideoCodecContext->height);
+    if (!m_pFrame || !m_pVideoCodecContext) {
+        return;
+    }
+    if (m_pFrame->flags & AV_FRAME_FLAG_INTERLACED) {
+        processFilterGraph((AVFrame*) m_pFrame, (AVFrame*) m_pFrame, static_cast<AVPixelFormat>(m_pFrame->format),
+                              m_pFrame->width, m_pFrame->height);
     }
 
-    int scaledWidth, scaledHeight;
-    convertAndScaleFrame(AV_PIX_FMT_RGB24, scaledSize, maintainAspectRatio, scaledWidth, scaledHeight);
+    int scaledWidth = 0, scaledHeight = 0;
+    if (!convertAndScaleFrame(AV_PIX_FMT_RGB24, scaledSize, maintainAspectRatio, scaledWidth, scaledHeight)) {
+        videoFrame.width = 0;
+        videoFrame.height = 0;
+        videoFrame.lineSize = 0;
+        videoFrame.frameData.clear();
+        return;
+    }
 
     videoFrame.width = scaledWidth;
     videoFrame.height = scaledHeight;
@@ -379,19 +388,32 @@ void MovieDecoder::getScaledVideoFrame(int scaledSize, bool maintainAspectRatio,
 
     videoFrame.frameData.clear();
     videoFrame.frameData.resize(videoFrame.lineSize * videoFrame.height);
-    memcpy((&(videoFrame.frameData.front())), m_pFrame->data[0], videoFrame.lineSize * videoFrame.height);
+    if (videoFrame.frameData.empty() || !m_pFrame->data[0]) {
+        videoFrame.width = 0;
+        videoFrame.height = 0;
+        videoFrame.lineSize = 0;
+        return;
+    }
+    memcpy(videoFrame.frameData.data(), m_pFrame->data[0], videoFrame.lineSize * videoFrame.height);
 }
 
-void MovieDecoder::convertAndScaleFrame(AVPixelFormat format, int scaledSize, bool maintainAspectRatio, int& scaledWidth, int& scaledHeight)
+bool MovieDecoder::convertAndScaleFrame(AVPixelFormat format, int scaledSize, bool maintainAspectRatio, int& scaledWidth, int& scaledHeight)
 {
+    scaledWidth = 0;
+    scaledHeight = 0;
+
+    if (!m_pFrame || m_pFrame->width <= 0 || m_pFrame->height <= 0 || m_pFrame->format == AV_PIX_FMT_NONE) {
+        return false;
+    }
+
     calculateDimensions(scaledSize, maintainAspectRatio, scaledWidth, scaledHeight);
-    SwsContext* scaleContext = sws_getContext(m_pVideoCodecContext->width, m_pVideoCodecContext->height,
-                               m_pVideoCodecContext->pix_fmt, scaledWidth, scaledHeight,
+    SwsContext* scaleContext = sws_getContext(m_pFrame->width, m_pFrame->height,
+                               static_cast<AVPixelFormat>(m_pFrame->format), scaledWidth, scaledHeight,
                                format, SWS_BICUBIC, nullptr, nullptr, nullptr);
 
     if (nullptr == scaleContext) {
         qDebug() << "Failed to create resize context";
-        return;
+        return false;
     }
 
     AVFrame* convertedFrame = nullptr;
@@ -399,7 +421,14 @@ void MovieDecoder::convertAndScaleFrame(AVPixelFormat format, int scaledSize, bo
 
     createAVFrame(&convertedFrame, &convertedFrameBuffer, scaledWidth, scaledHeight, format);
 
-    sws_scale(scaleContext, m_pFrame->data, m_pFrame->linesize, 0, m_pVideoCodecContext->height,
+    if (!convertedFrame || !convertedFrameBuffer) {
+        av_frame_free(&convertedFrame);
+        av_free(convertedFrameBuffer);
+        sws_freeContext(scaleContext);
+        return false;
+    }
+
+    sws_scale(scaleContext, m_pFrame->data, m_pFrame->linesize, 0, m_pFrame->height,
               convertedFrame->data, convertedFrame->linesize);
     sws_freeContext(scaleContext);
 
@@ -408,6 +437,8 @@ void MovieDecoder::convertAndScaleFrame(AVPixelFormat format, int scaledSize, bo
 
     m_pFrame        = convertedFrame;
     m_pFrameBuffer  = convertedFrameBuffer;
+
+    return true;
 }
 
 void MovieDecoder::calculateDimensions(int squareSize, bool maintainAspectRatio, int& destWidth, int& destHeight)

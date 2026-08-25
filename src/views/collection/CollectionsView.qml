@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import QtQuick.Effects
 
 import org.mauikit.controls as Maui
 import org.mauikit.filebrowsing as FB
@@ -276,8 +277,8 @@ Maui.Page
             {
                 id: _sourcesGrid
                 anchors.fill: parent
-                itemSize: Math.min(260, Math.max(140, Math.floor(availableWidth * 0.3)))
-                itemHeight: itemSize + Maui.Style.rowHeight
+                itemSize: availableWidth
+                itemHeight: itemSize / 2
                 flickable.reuseItems: true
 
                 holder.visible: count === 0
@@ -304,14 +305,11 @@ Maui.Page
                     readonly property string sourceUrl: model.url
                     height: GridView.view.cellHeight
                     width: GridView.view.cellWidth
-
                     Maui.CollageItem
                     {
+                        id: sourceCollage
                         anchors.fill: parent
                         anchors.margins: !root.isWide ? Maui.Style.space.tiny : Maui.Style.space.big
-
-                        imageWidth: 120
-                        imageHeight: 120
                         isCurrentItem: parent.GridView.isCurrentItem
                         images: model.preview ? String(model.preview).split(",") : []
                         tooltipText: model.path || model.url
@@ -320,6 +318,7 @@ Maui.Page
                         template.label2.text: model.modified ? Qt.formatDateTime(new Date(model.modified), "d MMM yyyy") : ""
                         template.iconSource: model.icon
                         template.iconVisible: true
+
 
                         onClicked:
                         {
@@ -356,7 +355,7 @@ Maui.Page
             allowLassoSelection: false
             showTitle: false
             headBar.visible: false
-            list.recursive: false
+            list.recursive: true
             listView.cacheBuffer: Math.max(height * 2, Maui.Style.units.gridUnit * 24)
             listView.flickable.reuseItems: true
 

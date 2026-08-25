@@ -198,11 +198,21 @@ MpvObject::MpvObject(QQuickItem * parent)
 
 MpvObject::~MpvObject()
 {
-    // only initialized if something got drawn
-    if (mpv_gl) {
-        mpv_render_context_free(mpv_gl);
+    if (mpv) {
+        mpv_set_wakeup_callback(mpv, nullptr, nullptr);
     }
-    mpv_terminate_destroy(mpv);
+
+    // Detach callbacks before releasing the render context and mpv handle.
+    if (mpv_gl) {
+        mpv_render_context_set_update_callback(mpv_gl, nullptr, nullptr);
+        mpv_render_context_free(mpv_gl);
+        mpv_gl = nullptr;
+    }
+
+    if (mpv) {
+        mpv_terminate_destroy(mpv);
+        mpv = nullptr;
+    }
 }
 
 //PlayListModel *MpvObject::playlistModel()

@@ -67,7 +67,7 @@ include(ECMSetupVersion)
 include(ECMSourceVersionControl)
 include(FeatureSummary)
 
-option(CLIP_BUILD_BUNDLED_PREVIEW_PROVIDER "Build Clip's bundled FFmpeg/TagLib preview provider" OFF)
+option(CLIP_BUILD_BUNDLED_PREVIEW_PROVIDER "Build Clip's bundled FFmpeg/TagLib preview provider" ON)
 
 if(CLIP_BUILD_BUNDLED_PREVIEW_PROVIDER)
     find_package(FFmpeg COMPONENTS REQUIRED AVCODEC AVFILTER AVFORMAT AVUTIL SWSCALE)
