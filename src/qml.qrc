@@ -1,0 +1,18 @@
+<RCC>
+    <qresource prefix="/app/maui/clip">
+        <file>main.qml</file>
+        <file>views/player/PlayerView.qml</file>
+        <file>views/player/MPVPlayer.qml</file>
+        <file>views/collection/CollectionView.qml</file>
+        <file>views/collection/CollectionsView.qml</file>
+        <file>views/tags/TagsView.qml</file>
+        <file>views/player/Playlist.qml</file>
+        <file>views/tags/TagsGrid.qml</file>
+        <file>views/BrowserLayout.qml</file>
+        <file>views/ItemMenu.qml</file>
+        <file>views/ListDelegate.qml</file>
+        <file>views/SelectionBar.qml</file>
+        <file>views/settings/SettingsDialog.qml</file>
+        <file>views/settings/ShortcutsDialog.qml</file>
+    </qresource>
+</RCC>

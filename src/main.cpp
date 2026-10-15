@@ -9,6 +9,7 @@
 #include <QQmlApplicationEngine>
 
 #include <KLocalizedString>
+#include <KLocalizedQmlContext>
 
 #include <MauiKit4/Core/mauiapp.h>
 #include <MauiKit4/FileBrowsing/fmstatic.h>
@@ -28,7 +29,7 @@
 #endif
 
 #include "utils/clip.h"
-#include "../clip_version.h"
+#include "clip_version.h"
 
 #include <QGuiApplication>
 #include <QQuickWindow>
@@ -174,7 +175,7 @@ Q_DECL_EXPORT int main(int argc, char *argv[])
 
     }, Qt::QueuedConnection);
 
-    engine.rootContext()->setContextObject(new KLocalizedContext(&engine));
+    engine.rootContext()->setContextObject(new KLocalizedQmlContext(&engine));
 
     engine.rootContext()->setContextProperty("initModule", arguments.first);
     engine.rootContext()->setContextProperty("initData", QUrl::toStringList(arguments.second));
