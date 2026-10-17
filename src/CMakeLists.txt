@@ -75,7 +75,8 @@ target_link_libraries(${PROJECT_NAME}
     Qt6::Qml
     Qt6::Multimedia
     KF6::CoreAddons
-    KF6::I18n)
+    KF6::I18n
+    KF6::I18nQml)
 
 if(CLIP_BUILD_BUNDLED_PREVIEW_PROVIDER)
     target_link_libraries(${PROJECT_NAME}

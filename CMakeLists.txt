@@ -10,6 +10,8 @@ add_compile_definitions(APP_COPYRIGHT_NOTICE="© 2019-2025 Maui Development Team
 
 project(clip VERSION ${CLIP_VERSION} LANGUAGES CXX)
 
+include_directories("${CMAKE_CURRENT_BINARY_DIR}")
+
 if(NOT CMAKE_SYSTEM_NAME STREQUAL "Linux")
     message(FATAL_ERROR "This project supports Linux only.")
 endif()
@@ -39,6 +41,8 @@ include(CheckCXXCompilerFlag)
 
 find_package(Qt6 ${REQUIRED_QT_VERSION} REQUIRED NO_MODULE COMPONENTS Core Sql Qml Quick Multimedia Network)
 find_package(KF6 ${REQUIRED_KF_VERSION} REQUIRED COMPONENTS I18n CoreAddons)
+set(QT_NO_PRIVATE_MODULE_WARNING ON CACHE BOOL
+    "MauiKit uses Qt's private WaylandClient API" FORCE)
 find_package(MauiKit4 ${REQUIRED_MAUIKIT_VERSION} REQUIRED COMPONENTS FileBrowsing)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(MPV REQUIRED IMPORTED_TARGET mpv)
