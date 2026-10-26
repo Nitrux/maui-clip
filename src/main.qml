@@ -38,7 +38,6 @@ Maui.ApplicationWindow
     property bool reachedEndOfFile: false
     property var shuffledPlaybackHistory: []
     property int shuffledPlaybackHistoryPosition: -1
-    property bool strictCompactVolumePopupDebug: true
     readonly property int replayModeOff: 0
     readonly property int replayModeOne: 1
     readonly property int replayModeAll: 2
@@ -129,11 +128,6 @@ Maui.ApplicationWindow
         return Math.max(margin, Math.min(compactVolumePopupFallbackBelowY(), maxY))
     }
 
-    function compactVolumePopupDebugPoint(point)
-    {
-        return "(" + Math.round(point.x) + ", " + Math.round(point.y) + ")"
-    }
-
     function compactVolumePopupBackgroundColor()
     {
         const background = _playerPage && _playerPage.footBar ? _playerPage.footBar.background : null
@@ -150,38 +144,6 @@ Maui.ApplicationWindow
             return background.border.color
 
         return Maui.Theme.alternateBackgroundColor
-    }
-
-    function logCompactVolumePopupGeometry(reason)
-    {
-        if (!strictCompactVolumePopupDebug || !_compactVolumePopup || !_volumeButton)
-            return
-
-        const host = compactVolumePopupHost()
-        if (!host)
-            return
-
-        const buttonTopLeft = _volumeButton.mapToItem(host, 0, 0)
-        const buttonBottomRight = _volumeButton.mapToItem(host, _volumeButton.width, _volumeButton.height)
-        const popupTopLeft = _compactVolumePopup.mapToItem(host, 0, 0)
-
-        console.log("[compact-volume-popup]"
-                    + " reason=" + reason
-                    + " visible=" + _compactVolumePopup.visible
-                    + " compact=" + _playerPage.compactVolumeControl
-                    + " popupVisible=" + _playerPage.compactVolumePopupVisible
-                    + " hostSize=" + Math.round(host.width) + "x" + Math.round(host.height)
-                    + " footBarSize=" + Math.round(_playerPage.footBar.width) + "x" + Math.round(_playerPage.footBar.height)
-                    + " buttonTopLeft=" + compactVolumePopupDebugPoint(buttonTopLeft)
-                    + " buttonBottomRight=" + compactVolumePopupDebugPoint(buttonBottomRight)
-                    + " buttonSize=" + Math.round(_volumeButton.width) + "x" + Math.round(_volumeButton.height)
-                    + " popupTopLeft=" + compactVolumePopupDebugPoint(popupTopLeft)
-                    + " popupSize=" + Math.round(_compactVolumePopup.width) + "x" + Math.round(_compactVolumePopup.height)
-                    + " rawX=" + Math.round(compactVolumePopupRawX())
-                    + " resolvedX=" + Math.round(_compactVolumePopup.x)
-                    + " preferredAboveY=" + Math.round(compactVolumePopupPreferredAboveY())
-                    + " fallbackBelowY=" + Math.round(compactVolumePopupFallbackBelowY())
-                    + " resolvedY=" + Math.round(_compactVolumePopup.y))
     }
 
     function handleEscapeShortcut()
@@ -208,19 +170,6 @@ Maui.ApplicationWindow
     Component.onCompleted:
     {
         Qt.callLater(() => _workspace.sideBar.close())
-        Qt.callLater(() => logCompactVolumePopupGeometry("root completed"))
-    }
-
-    onWidthChanged:
-    {
-        if (_compactVolumePopup.visible)
-            Qt.callLater(() => logCompactVolumePopupGeometry("root width changed"))
-    }
-
-    onHeightChanged:
-    {
-        if (_compactVolumePopup.visible)
-            Qt.callLater(() => logCompactVolumePopupGeometry("root height changed"))
     }
 
     Maui.WindowBlur
@@ -351,6 +300,62 @@ Maui.ApplicationWindow
 
     Component
     {
+        id: _videoInfoDialogComponent
+
+        Maui.SettingsDialog
+        {
+            property var fileInfo: ({})
+
+            Maui.Controls.title: i18n("File Information")
+            closeButtonVisible: true
+
+            function displayPath(path)
+            {
+                const value = String(path || "")
+                return value.startsWith("file://") ? decodeURIComponent(value.slice(7)) : value
+            }
+
+            Maui.SectionGroup
+            {
+                title: i18n("Metadata")
+
+                Maui.FlexSectionItem
+                {
+                    label1.text: i18n("Name")
+                    label2.text: String(fileInfo.label || fileInfo.name || "")
+                    label2.wrapMode: Text.Wrap
+                }
+
+                Maui.FlexSectionItem
+                {
+                    label1.text: i18n("Type")
+                    label2.text: String(fileInfo.mime || "")
+                }
+
+                Maui.FlexSectionItem
+                {
+                    label1.text: i18n("Size")
+                    label2.text: fileInfo.size !== undefined ? Maui.Handy.formatSize(fileInfo.size) : ""
+                }
+
+                Maui.FlexSectionItem
+                {
+                    label1.text: i18n("Modified")
+                    label2.text: fileInfo.modified ? Qt.formatDateTime(new Date(fileInfo.modified), "d MMM yyyy") : ""
+                }
+
+                Maui.FlexSectionItem
+                {
+                    label1.text: i18n("Path")
+                    label2.text: displayPath(fileInfo.path || fileInfo.url)
+                    label2.wrapMode: Text.Wrap
+                }
+            }
+        }
+    }
+
+    Component
+    {
         id: _shortcutsDialogComponent
         ShortcutsDialog
         {
@@ -440,6 +445,9 @@ Maui.ApplicationWindow
         headBar.enabled: fullScreenPlaybackChromeOpacity > 0.01
         headBar.opacity: fullScreenPlaybackChromeOpacity
         headBar.forceCenterMiddleContent: true
+        headBar.preferredHeight: root.isWide ? Maui.Style.rowHeightAlt : Maui.Style.rowHeight
+        headBar.topPadding: root.isWide ? Maui.Style.defaultPadding : Maui.Style.space.small
+        headBar.bottomPadding: root.isWide ? Maui.Style.defaultPadding : Maui.Style.space.small
 
         Maui.Controls.showCSD: true
 
@@ -460,34 +468,15 @@ Maui.ApplicationWindow
                 ToolTip.timeout: 5000
                 ToolTip.visible: hovered
                 ToolTip.text: i18n("Toggle sidebar")
-            }
-        ]
+            },
 
-        headBar.middleContent: []
-
-        Item
-        {
-            anchors.top: parent.top
-            anchors.left: parent.left
-            anchors.right: parent.right
-            height: _shellPage.headBar.height
-            z: 999
-            enabled: false
-            visible: _shellPage.headBar.visible && !!_playerView.currentVideo.label
-
-            Label
+            ToolSeparator
             {
-                anchors.centerIn: parent
-                width: Math.max(0, parent.width - (Maui.Style.units.gridUnit * 16))
-                text: _playerView.currentVideo.label || ""
-                horizontalAlignment: Text.AlignHCenter
-                verticalAlignment: Text.AlignVCenter
-                elide: Text.ElideMiddle
-                maximumLineCount: 1
-            }
-        }
+                height: Maui.Style.space.medium
+                topPadding: 0
+                bottomPadding: 0
+            },
 
-        headBar.rightContent: [
             Maui.ToolButtonMenu
             {
                 id: _displayOptionsMenu
@@ -560,6 +549,18 @@ Maui.ApplicationWindow
                     text: i18n("Audio Tracks")
                     onTriggered: _playerView.openAudioTracksDialog()
                 }
+            },
+
+        ]
+
+        headBar.middleContent: []
+
+        headBar.rightContent: [
+            ToolButton
+            {
+                visible: !!_playerView.currentVideo.url
+                icon.name: "documentinfo"
+                onClicked: openVideoInfoDialog()
             },
 
             ToolSeparator
@@ -1037,7 +1038,6 @@ Maui.ApplicationWindow
                     if (!compactVolumeControl)
                         compactVolumePopupVisible = false
 
-                    Qt.callLater(() => root.logCompactVolumePopupGeometry("compact mode changed"))
                 }
 
                 Keys.enabled: !Maui.Handy.isMobile
@@ -1500,65 +1500,16 @@ Maui.ApplicationWindow
                 }
 
                 floatingFooter: true
+                footBar.preferredHeight: root.isWide ? Maui.Style.rowHeightAlt : Maui.Style.rowHeight
+                footBar.topPadding: root.isWide ? Maui.Style.defaultPadding : Maui.Style.space.small
+                footBar.bottomPadding: root.isWide ? Maui.Style.defaultPadding : Maui.Style.space.small
                 footerMargins: Maui.Style.contentMargins
                 footBar.forceCenterMiddleContent: false
                 footBar.visible: !fullScreenPlaybackChromeAutoHide || fullScreenPlaybackChromeOpacity > 0.01
                 footBar.enabled: fullScreenPlaybackChromeOpacity > 0.01
                 footBar.opacity: fullScreenPlaybackChromeOpacity
 
-                footBar.middleContent: Slider
-                {
-                    id: _slider
-                    Layout.fillWidth: true
-                    Layout.minimumWidth: 0
-                    Layout.preferredWidth: 0
-                    padding: 0
-                    implicitWidth: 0
-                    orientation: Qt.Horizontal
-                    from: 0
-                    to: cachedPlayerDuration || player.duration
-                    live: true
-                    Layout.preferredHeight: 22
-                    enabled: !!_playerView.currentVideo.url
-                    spacing: 0
-                    focus: true
-
-                    Binding on value
-                    {
-                        when: !_slider.pressed
-                        value: displayedPlayerPosition()
-                        restoreMode: Binding.RestoreBindingOrValue
-                    }
-
-                    onPressedChanged:
-                    {
-                        if (!pressed) {
-                            syncVisualPlayerPosition(_slider.value)
-                            player.seek(_slider.value)
-                        }
-                    }
-
-                    MouseArea
-                    {
-                        anchors.fill: parent
-                        acceptedButtons: Qt.NoButton
-                        hoverEnabled: true
-                        z: 10
-
-                        onWheel: function(wheel)
-                        {
-                            wheel.accepted = true
-                        }
-                    }
-                }
-
                 footBar.rightContent: [
-                    Label
-                    {
-                        id: _playbackTimeLabel
-                        text: Maui.Handy.formatTime(Math.round(displayedPlayerPosition() / 1000)) + " / " + Maui.Handy.formatTime(Math.round(player.duration / 1000))
-                    },
-
                     ToolButton
                     {
                         id: _volumeButton
@@ -1574,28 +1525,7 @@ Maui.ApplicationWindow
                                 toggleMute()
                             } else {
                                 _playerPage.compactVolumePopupVisible = !_playerPage.compactVolumePopupVisible
-                                Qt.callLater(() => root.logCompactVolumePopupGeometry("volume button toggled compact popup"))
                             }
-                        }
-                        onXChanged:
-                        {
-                            if (_compactVolumePopup.visible)
-                                Qt.callLater(() => root.logCompactVolumePopupGeometry("volume button x changed"))
-                        }
-                        onYChanged:
-                        {
-                            if (_compactVolumePopup.visible)
-                                Qt.callLater(() => root.logCompactVolumePopupGeometry("volume button y changed"))
-                        }
-                        onWidthChanged:
-                        {
-                            if (_compactVolumePopup.visible)
-                                Qt.callLater(() => root.logCompactVolumePopupGeometry("volume button width changed"))
-                        }
-                        onHeightChanged:
-                        {
-                            if (_compactVolumePopup.visible)
-                                Qt.callLater(() => root.logCompactVolumePopupGeometry("volume button height changed"))
                         }
 
                         MouseArea
@@ -1662,27 +1592,6 @@ Maui.ApplicationWindow
                         shadowBlur: 0.4
                         shadowVerticalOffset: 2
                     }
-                    onVisibleChanged: Qt.callLater(() => root.logCompactVolumePopupGeometry("popup visible changed"))
-                    onXChanged:
-                    {
-                        if (visible)
-                            Qt.callLater(() => root.logCompactVolumePopupGeometry("popup x changed"))
-                    }
-                    onYChanged:
-                    {
-                        if (visible)
-                            Qt.callLater(() => root.logCompactVolumePopupGeometry("popup y changed"))
-                    }
-                    onWidthChanged:
-                    {
-                        if (visible)
-                            Qt.callLater(() => root.logCompactVolumePopupGeometry("popup width changed"))
-                    }
-                    onHeightChanged:
-                    {
-                        if (visible)
-                            Qt.callLater(() => root.logCompactVolumePopupGeometry("popup height changed"))
-                    }
 
                     ColumnLayout
                     {
@@ -1727,40 +1636,136 @@ Maui.ApplicationWindow
                     }
                 }
 
-                footBar.leftContent: Maui.ToolActions
+                Slider
                 {
-                    expanded: true
-                    checkable: false
-                    autoExclusive: false
+                    id: _slider
+                    parent: _playerPage.footBar
+                    z: 999
+                    visible: !!_playerView.currentVideo.url
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    readonly property int edgeInset: Math.max(0, Maui.Style.radiusV - 1)
+                    anchors.leftMargin: edgeInset
+                    anchors.rightMargin: edgeInset
+                    anchors.top: parent.top
+                    from: 0
+                    to: cachedPlayerDuration || player.duration
+                    live: true
+                    leftPadding: 0
+                    rightPadding: 0
+                    topPadding: 0
+                    bottomPadding: 0
+                    implicitHeight: 3
+                    enabled: !!_playerView.currentVideo.url
+                    focus: true
+                    property bool seeking: false
 
-                    Action
+                    Binding on value
                     {
-                        icon.name: "media-skip-backward"
-                        enabled: _playlist.list.count > 1
-                        onTriggered: playPrevious()
+                        when: !_slider.seeking
+                        value: displayedPlayerPosition()
+                        restoreMode: Binding.RestoreBindingOrValue
                     }
 
-                    Action
+                    handle: Rectangle
                     {
-                        icon.name: player.isPlaying ? "media-playback-pause" : "media-playback-start"
-                        enabled: !!_playerView.currentVideo.url
-                        onTriggered: player.isPlaying ? player.pause() : startPlayback()
+                        visible: false
+                        width: 0
+                        height: 0
                     }
 
-                    Action
+                    function seekTo(xPos)
                     {
-                        icon.name: "media-playback-stop"
-                        enabled: !!_playerView.currentVideo.url
-                        onTriggered: stopPlayback()
+                        const localX = Math.max(0, Math.min(_slider.availableWidth, xPos - _slider.leftPadding))
+                        const ratio = Math.max(0, Math.min(1, localX / Math.max(1, _slider.availableWidth)))
+                        _slider.value = _slider.from + ((_slider.to - _slider.from) * ratio)
                     }
 
-                    Action
+                    background: Rectangle
                     {
-                        icon.name: "media-skip-forward"
-                        enabled: _playlist.list.count > 1
-                        onTriggered: playNext()
+                        id: _footerEdgeSeekBarTrack
+                        x: _slider.leftPadding
+                        y: 0
+                        width: _slider.availableWidth
+                        height: 3
+                        radius: 2
+                        color: Qt.rgba(Maui.Theme.textColor.r, Maui.Theme.textColor.g, Maui.Theme.textColor.b, 0.25)
+
+                        Rectangle
+                        {
+                            width: _slider.visualPosition * parent.width
+                            height: parent.height
+                            radius: parent.radius
+                            color: Maui.Theme.highlightColor
+                        }
+                    }
+
+                    MouseArea
+                    {
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        y: Math.max(0, _footerEdgeSeekBarTrack.y - 3)
+                        height: _footerEdgeSeekBarTrack.height + 6
+                        z: parent.z + 1
+                        cursorShape: Qt.PointingHandCursor
+
+                        onPressed: (mouse) =>
+                        {
+                            _slider.seeking = true
+                            _slider.seekTo(mouse.x)
+                        }
+                        onPositionChanged: (mouse) =>
+                        {
+                            if (pressed)
+                                _slider.seekTo(mouse.x)
+                        }
+                        onReleased:
+                        {
+                            _slider.seeking = false
+                            syncVisualPlayerPosition(_slider.value)
+                            player.seek(_slider.value)
+                        }
+                        onCanceled: _slider.seeking = false
                     }
                 }
+
+                footBar.leftContent: [
+                    Maui.ToolActions
+                    {
+                        expanded: true
+                        checkable: false
+                        autoExclusive: false
+                        display: ToolButton.IconOnly
+
+                        Action
+                        {
+                            icon.name: "media-skip-backward"
+                            enabled: _playlist.list.count > 1
+                            onTriggered: playPrevious()
+                        }
+
+                        Action
+                        {
+                            icon.name: player.isPlaying ? "media-playback-pause" : "media-playback-start"
+                            enabled: !!_playerView.currentVideo.url
+                            onTriggered: player.isPlaying ? player.pause() : startPlayback()
+                        }
+
+                        Action
+                        {
+                            icon.name: "media-skip-forward"
+                            enabled: _playlist.list.count > 1
+                            onTriggered: playNext()
+                        }
+                    },
+
+                    Label
+                    {
+                        id: _playbackTimeLabel
+                        text: Maui.Handy.formatTime(Math.round(displayedPlayerPosition() / 1000)) + " / " + Maui.Handy.formatTime(Math.round(player.duration / 1000))
+                        Layout.leftMargin: Maui.Style.space.medium
+                    }
+                ]
             }
         }
     }
@@ -1857,7 +1862,7 @@ Maui.ApplicationWindow
     {
         interval: 33
         repeat: true
-        running: !!_playerView.currentVideo.url && player.playbackState === MediaPlayer.PlayingState && !_slider.pressed
+        running: !!_playerView.currentVideo.url && player.playbackState === MediaPlayer.PlayingState && !_slider.seeking
         onTriggered:
         {
             const elapsed = Date.now() - visualPlayerPositionSyncTimestamp
@@ -1959,7 +1964,7 @@ Maui.ApplicationWindow
 
     function displayedPlayerPosition()
     {
-        if (_slider.pressed)
+        if (_slider.seeking)
             return _slider.value
 
         if (reachedEndOfFile)
@@ -2438,6 +2443,20 @@ Maui.ApplicationWindow
     function openSettingsDialog()
     {
         const dialog = _settingsDialogComponent.createObject(root)
+        dialog.open()
+    }
+
+    function openVideoInfoDialog()
+    {
+        const url = _playerView.currentVideo && _playerView.currentVideo.url
+                      ? _playerView.currentVideo.url
+                      : ""
+        if (!url)
+            return
+
+        const dialog = _videoInfoDialogComponent.createObject(root, {
+            "fileInfo": FB.FM.getFileInfo(url)
+        })
         dialog.open()
     }
 
