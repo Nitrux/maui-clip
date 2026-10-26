@@ -445,9 +445,9 @@ Maui.ApplicationWindow
         headBar.enabled: fullScreenPlaybackChromeOpacity > 0.01
         headBar.opacity: fullScreenPlaybackChromeOpacity
         headBar.forceCenterMiddleContent: true
-        headBar.preferredHeight: root.isWide ? Maui.Style.rowHeightAlt : Maui.Style.rowHeight
-        headBar.topPadding: root.isWide ? Maui.Style.defaultPadding : Maui.Style.space.small
-        headBar.bottomPadding: root.isWide ? Maui.Style.defaultPadding : Maui.Style.space.small
+        headBar.preferredHeight: Maui.Style.rowHeightAlt
+        headBar.topPadding: Maui.Style.defaultPadding
+        headBar.bottomPadding: Maui.Style.defaultPadding
 
         Maui.Controls.showCSD: true
 
@@ -1500,9 +1500,9 @@ Maui.ApplicationWindow
                 }
 
                 floatingFooter: true
-                footBar.preferredHeight: root.isWide ? Maui.Style.rowHeightAlt : Maui.Style.rowHeight
-                footBar.topPadding: root.isWide ? Maui.Style.defaultPadding : Maui.Style.space.small
-                footBar.bottomPadding: root.isWide ? Maui.Style.defaultPadding : Maui.Style.space.small
+                footBar.preferredHeight: Maui.Style.rowHeightAlt
+                footBar.topPadding: Maui.Style.defaultPadding
+                footBar.bottomPadding: Maui.Style.defaultPadding
                 footerMargins: Maui.Style.contentMargins
                 footBar.forceCenterMiddleContent: false
                 footBar.visible: !fullScreenPlaybackChromeAutoHide || fullScreenPlaybackChromeOpacity > 0.01
