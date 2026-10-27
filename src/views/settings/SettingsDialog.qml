@@ -142,9 +142,10 @@ Maui.SettingsDialog
         message: i18n("Are you sure you want to remove the source:\n%1", sourceLabel)
         template.iconSource: "emblem-warning"
 
-        standardButtons: Dialog.Ok | Dialog.Cancel
+        standardButtons: Dialog.Discard | Dialog.Cancel
+        Component.onCompleted: standardButton(Dialog.Discard).text = i18n("Remove")
 
-        onAccepted:
+        onDiscarded:
         {
             if (sourceUrl.length > 0)
                 Clip.Clip.removeSources(sourceUrl)
