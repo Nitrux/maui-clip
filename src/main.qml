@@ -1659,6 +1659,7 @@ Maui.ApplicationWindow
                     enabled: !!_playerView.currentVideo.url
                     focus: true
                     property bool seeking: false
+                    property real previewPosition: -1
 
                     Binding on value
                     {
@@ -1679,6 +1680,21 @@ Maui.ApplicationWindow
                         const localX = Math.max(0, Math.min(_slider.availableWidth, xPos - _slider.leftPadding))
                         const ratio = Math.max(0, Math.min(1, localX / Math.max(1, _slider.availableWidth)))
                         _slider.value = _slider.from + ((_slider.to - _slider.from) * ratio)
+                    }
+
+                    Timer
+                    {
+                        interval: 100
+                        repeat: true
+                        running: _slider.seeking
+                        onTriggered:
+                        {
+                            if (_slider.value !== _slider.previewPosition)
+                            {
+                                _slider.previewPosition = _slider.value
+                                player.seek(_slider.previewPosition)
+                            }
+                        }
                     }
 
                     background: Rectangle
@@ -1702,17 +1718,22 @@ Maui.ApplicationWindow
 
                     MouseArea
                     {
-                        anchors.left: parent.left
-                        anchors.right: parent.right
-                        y: Math.max(0, _footerEdgeSeekBarTrack.y - 3)
-                        height: _footerEdgeSeekBarTrack.height + 6
-                        z: parent.z + 1
+                        parent: _slider.parent
+                        anchors.left: _slider.left
+                        anchors.right: _slider.right
+                        y: _slider.y
+                        height: Maui.Style.units.gridUnit
+                        z: _slider.z + 1
+                        visible: _slider.visible
+                        enabled: _slider.enabled
                         cursorShape: Qt.PointingHandCursor
 
                         onPressed: (mouse) =>
                         {
                             _slider.seeking = true
                             _slider.seekTo(mouse.x)
+                            _slider.previewPosition = _slider.value
+                            player.seek(_slider.previewPosition)
                         }
                         onPositionChanged: (mouse) =>
                         {
@@ -1721,9 +1742,9 @@ Maui.ApplicationWindow
                         }
                         onReleased:
                         {
-                            _slider.seeking = false
                             syncVisualPlayerPosition(_slider.value)
                             player.seek(_slider.value)
+                            _slider.seeking = false
                         }
                         onCanceled: _slider.seeking = false
                     }
