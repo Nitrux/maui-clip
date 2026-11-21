@@ -94,3 +94,11 @@ install(FILES org.maui.clip.desktop DESTINATION ${KDE_INSTALL_APPDIR})
 install(FILES assets/maui-clip.svg DESTINATION ${KDE_INSTALL_ICONDIR}/hicolor/scalable/apps)
 
 qt_finalize_target(${PROJECT_NAME})
+
+target_precompile_headers(${PROJECT_NAME} PRIVATE
+    <QDebug>
+    <QFileInfo>
+    <QGuiApplication>
+    <QQmlEngine>
+    <QQuickWindow>
+)
