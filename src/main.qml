@@ -28,6 +28,13 @@ Maui.ApplicationWindow
     background: null
     onClosing: stopPlayback()
 
+    function syncPlaybackInhibit()
+    {
+        portalInhibit.setInhibited(root, _playerView.player.playbackState === MediaPlayer.PlayingState)
+    }
+
+    Component.onDestruction: portalInhibit.setInhibited(root, false)
+
     property bool selectionMode: false
     property int lastAudibleVolume: 100
     property bool suppressToolbarSearchCallbacks: false
@@ -169,6 +176,7 @@ Maui.ApplicationWindow
 
     Component.onCompleted:
     {
+        syncPlaybackInhibit()
         Qt.callLater(() => _workspace.sideBar.close())
     }
 
@@ -1722,7 +1730,7 @@ Maui.ApplicationWindow
                         anchors.left: _slider.left
                         anchors.right: _slider.right
                         y: _slider.y
-                        height: Maui.Style.units.gridUnit
+                        height: _slider.height
                         z: _slider.z + 1
                         visible: _slider.visible
                         enabled: _slider.enabled
@@ -1845,6 +1853,7 @@ Maui.ApplicationWindow
 
         function onPlaybackStateChanged()
         {
+            root.syncPlaybackInhibit()
             syncVisualPlayerPosition(player.position)
         }
 

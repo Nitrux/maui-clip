@@ -43,7 +43,7 @@ set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" ${ECM_MODULE_PATH})
 include(KDEInstallDirs)
 include(CheckCXXCompilerFlag)
 
-find_package(Qt6 ${REQUIRED_QT_VERSION} REQUIRED NO_MODULE COMPONENTS Core Sql Qml Quick Multimedia Network)
+find_package(Qt6 ${REQUIRED_QT_VERSION} REQUIRED NO_MODULE COMPONENTS Core DBus Sql Qml Quick Multimedia Network)
 find_package(KF6 ${REQUIRED_KF_VERSION} REQUIRED COMPONENTS I18n CoreAddons)
 set(QT_NO_PRIVATE_MODULE_WARNING ON CACHE BOOL
     "MauiKit uses Qt's private WaylandClient API" FORCE)

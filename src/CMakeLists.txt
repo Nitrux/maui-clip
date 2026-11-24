@@ -9,6 +9,8 @@ set(mpvSRCS
 
 set(clipSRCS
     main.cpp
+    portalinhibit.cpp
+    portalinhibit.h
     models/videosmodel.cpp
     models/tagsmodel.cpp
     utils/clip.cpp
@@ -70,6 +72,7 @@ target_link_libraries(${PROJECT_NAME}
     MauiKit4
     MauiKit4::FileBrowsing
     Qt6::Network
+    Qt6::DBus
     Qt6::Core
     Qt6::Quick
     Qt6::Qml

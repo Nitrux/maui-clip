@@ -11,6 +11,8 @@
 #include <KLocalizedString>
 #include <KLocalizedQmlContext>
 
+#include "portalinhibit.h"
+
 #include <MauiKit4/Core/mauiapp.h>
 #include <MauiKit4/FileBrowsing/fmstatic.h>
 #include <MauiKit4/FileBrowsing/moduleinfo.h>
@@ -162,6 +164,7 @@ Q_DECL_EXPORT int main(int argc, char *argv[])
         arguments.second = openFiles(args);
     }
 
+    PortalInhibit portalInhibit(8, QStringLiteral("Video playback"), &app);
     QQmlApplicationEngine engine;
     const QUrl url(QStringLiteral("qrc:/app/maui/clip/main.qml"));
     QObject::connect(&engine, &QQmlApplicationEngine::objectCreated,
@@ -176,6 +179,7 @@ Q_DECL_EXPORT int main(int argc, char *argv[])
     }, Qt::QueuedConnection);
 
     engine.rootContext()->setContextObject(new KLocalizedQmlContext(&engine));
+    engine.rootContext()->setContextProperty("portalInhibit", &portalInhibit);
 
     engine.rootContext()->setContextProperty("initModule", arguments.first);
     engine.rootContext()->setContextProperty("initData", QUrl::toStringList(arguments.second));
