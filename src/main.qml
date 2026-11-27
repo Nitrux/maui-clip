@@ -310,12 +310,11 @@ Maui.ApplicationWindow
     {
         id: _videoInfoDialogComponent
 
-        Maui.SettingsDialog
+        Maui.InfoDialog
         {
             property var fileInfo: ({})
 
-            Maui.Controls.title: i18n("File Information")
-            closeButtonVisible: true
+            title: i18n("File Information")
 
             function displayPath(path)
             {
