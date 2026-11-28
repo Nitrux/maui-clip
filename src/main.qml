@@ -243,6 +243,7 @@ Maui.ApplicationWindow
         property int sortOrder: Qt.DescendingOrder
         property bool hardwareDecoding: true
         property bool hidePlayerChromeInFullScreen: false
+        property bool playlistAutoplay: false
         property bool shufflePlayback: false
         property int replayMode: 0
         property string subtitlesPath
@@ -1666,7 +1667,6 @@ Maui.ApplicationWindow
                     enabled: !!_playerView.currentVideo.url
                     focus: true
                     property bool seeking: false
-                    property real previewPosition: -1
 
                     Binding on value
                     {
@@ -1680,28 +1680,6 @@ Maui.ApplicationWindow
                         visible: false
                         width: 0
                         height: 0
-                    }
-
-                    function seekTo(xPos)
-                    {
-                        const localX = Math.max(0, Math.min(_slider.availableWidth, xPos - _slider.leftPadding))
-                        const ratio = Math.max(0, Math.min(1, localX / Math.max(1, _slider.availableWidth)))
-                        _slider.value = _slider.from + ((_slider.to - _slider.from) * ratio)
-                    }
-
-                    Timer
-                    {
-                        interval: 100
-                        repeat: true
-                        running: _slider.seeking
-                        onTriggered:
-                        {
-                            if (_slider.value !== _slider.previewPosition)
-                            {
-                                _slider.previewPosition = _slider.value
-                                player.seek(_slider.previewPosition)
-                            }
-                        }
                     }
 
                     background: Rectangle
@@ -1735,17 +1713,32 @@ Maui.ApplicationWindow
                         enabled: _slider.enabled
                         cursorShape: Qt.PointingHandCursor
 
+                        property real lastX: 0
+
                         onPressed: (mouse) =>
                         {
                             _slider.seeking = true
-                            _slider.seekTo(mouse.x)
-                            _slider.previewPosition = _slider.value
-                            player.seek(_slider.previewPosition)
+                            lastX = mouse.x
+                            const ratio = Math.max(0, Math.min(1, (mouse.x - _slider.leftPadding) / Math.max(1, _slider.availableWidth)))
+                            _slider.value = _slider.from + (_slider.to - _slider.from) * ratio
+                            player.seek(_slider.value)
                         }
                         onPositionChanged: (mouse) =>
                         {
-                            if (pressed)
-                                _slider.seekTo(mouse.x)
+                            if (!pressed)
+                                return
+
+                            const scale = (_slider.to - _slider.from) / Math.max(1, _slider.availableWidth)
+                            // Above the bar, scrub at up to one millisecond per pixel.
+                            const fine = mouse.y < -Maui.Style.units.gridUnit
+                            const delta = (mouse.x - lastX) * (fine ? Math.min(scale, 1) : scale)
+                            lastX = mouse.x
+                            const target = Math.max(_slider.from, Math.min(_slider.to, _slider.value + delta))
+                            if (target !== _slider.value)
+                            {
+                                _slider.value = target
+                                player.seek(target)
+                            }
                         }
                         onReleased:
                         {
@@ -2129,6 +2122,9 @@ Maui.ApplicationWindow
             if (!_playerView.currentVideo.url || !currentQueuedVideoIsActive())
                 return
 
+            if (!settings.playlistAutoplay)
+                return
+
             const advanced = playNext({ wrap: shouldWrap })
 
             if (!advanced && !shouldWrap && _playerView.stop)
@@ -2301,6 +2297,11 @@ Maui.ApplicationWindow
             if (index < previousIndex)
                 _playerView.currentVideoIndex = previousIndex - 1
 
+            return true
+        }
+
+        if (!settings.playlistAutoplay) {
+            stopPlayback()
             return true
         }
 

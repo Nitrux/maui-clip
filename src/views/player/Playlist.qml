@@ -133,6 +133,7 @@ Maui.Page
         {
             id: _listDelegate
             width: ListView.view.width
+            contentItem.z: mouseArea.z + 1
 
             isCurrentItem: ListView.isCurrentItem
             draggable: true

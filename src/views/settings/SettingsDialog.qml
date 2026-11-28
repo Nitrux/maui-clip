@@ -44,6 +44,18 @@ Maui.SettingsDialog
 
         Maui.FlexSectionItem
         {
+            label1.text: i18n("Playlist Autoplay")
+            label2.text: i18n("Automatically play the next queued video when the current video ends or is removed.")
+
+            Switch
+            {
+                checked: settings.playlistAutoplay
+                onToggled: settings.playlistAutoplay = checked
+            }
+        }
+
+        Maui.FlexSectionItem
+        {
             label1.text: i18n("Shuffle Playback")
             label2.text: i18n("Play a random queued video when moving forward or backward through the playlist.")
 
